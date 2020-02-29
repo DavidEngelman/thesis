@@ -52,6 +52,9 @@ class LLVMEnv(gym.Env):
 
         if action == 0:
             self.llvm.instructions_to_schedule.remove(self.selected_instruction)
+            self.llvm.instr_graph.remove_node(self.selected_instruction)
+            if self.selected_instruction.opcode in MEMORY_INSTR:
+                self.llvm.memory_graph.remove_node(self.selected_instruction)
             self.llvm.scheduled_instructions.append(self.selected_instruction)
             # update the schedulable instruction list
             self.schedulable_instructions = self.llvm.find_schedulable_instructions()
@@ -163,7 +166,7 @@ class LLVMController:
                 self.init_new_block()
         else:
             self.instructions_to_schedule = self.block_instructions[:-1] # everything but the terminator instruction
-        self.memory_graph = create_memory_dependency_graph(self.blocks[self.curr_block])
+        self.instr_graph, self.memory_graph = create_dependency_graphs(self.instructions_to_schedule)
 
     def get_blocks(self):
         blocks = []
@@ -196,21 +199,17 @@ class LLVMController:
                 self.init_new_block()
 
         self.schedulable_instructions = []
-        for instruction in self.instructions_to_schedule:
+        for instruction in self.instr_graph.nodes():
             if self.is_schedulable(instruction):
                 self.schedulable_instructions.append(instruction)
 
         return self.schedulable_instructions
 
     def is_schedulable(self, instruction):
-        for operand in instruction.operands:
-            if (self.is_block_instruction(operand)) and not (operand in self.scheduled_instructions):
-                return False
-
-        if instruction.opcode in MEMORY_INSTR:
-            successors = self.memory_graph.neighbors(instruction)
-            return all(elem in self.scheduled_instructions for elem in successors)
-
+        if instruction.opcode in MEMORY_INSTR and self.memory_graph.in_degree(instruction) != 0:
+            return False
+        if self.instr_graph.in_degree(instruction) != 0:
+            return False
         return True
 
     def is_block_instruction(self, operand):
@@ -311,7 +310,7 @@ class LLVMController:
         os.sched_setaffinity(pid, {0})
 
         # run the program ones without timing it
-        print(func())
+        # print(func())
 
         min_time = 9999
         nb_runs = 100000
@@ -342,7 +341,7 @@ class LLVMController:
         # run the program ones without timing it
         func()
 
-        min_time = min(timeit.repeat(func, number=10, repeat=10000))
+        min_time = min(timeit.repeat(func, number=1, repeat=1))
         
 
         os.sched_setaffinity(pid, {0, 1, 2, 3})
