@@ -1,13 +1,32 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+import itertools as it
+import re
 
 
 MEMORY_INSTR = ["load", "store"]
 
-def reformat_string(s):
-    s = "  " + s + "\n"
+def reformat_string(s, struct_types):
+    # # handle struct variable case:
+    # s = handle_struct(s, struct_types)
+    s = s + "\n"
     return s
 
+# def handle_struct(s, struct_types):
+#     if len(struct_types) == 0:
+#         return s
+#     for struct in struct_types:
+#         if struct in s:
+#             print('s')
+#             print(s)
+#             print('struct')
+#             print(struct)
+#             s_ok = re.sub(rf"{struct}[.]\d", struct, s)
+#             print("s_ok")
+#             print(s_ok)
+#             return s_ok
+#             # TODO check que c'est ok
+#     return s
 
 def rename_percentages(f_list, f_string):
 
@@ -51,6 +70,24 @@ def create_memory_dependency_graph(block):
     # plt.show()
     return G
 
+def create_instructions_dependency_graph(block):
+    """An instructions depend on another one if it contains it in its operand"""
+    G = nx.DiGraph()
+    # add all block instructions to the graph
+    for i in block:
+        G.add_node(i)
+
+    # create dependencies
+    nodes_combinations = it.combinations(G.nodes, 2)
+    for instr1, instr2 in nodes_combinations:
+        if depends_on(instr1, instr2) :
+            G.add_edge(instr1, instr2)
+        elif depends_on(instr2, instr1):
+            G.add_edge(instr2, instr1 )
+    return G
+
+def depends_on(instr1, instr2):
+    return instr2 in instr1.operands
 
 def is_before(i1, i2, block):
     return block.index(i1) < block.index(i2)

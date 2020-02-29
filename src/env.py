@@ -6,6 +6,7 @@ import collections
 import os
 import copy
 import timeit
+import re
 
 from gym import spaces
 from utils import *
@@ -39,7 +40,6 @@ class LLVMEnv(gym.Env):
         # self.observation_space = spaces.Discrete(len(self.instr_to_opcode))  # 1 state per instruction
         self.observation_space = spaces.Box(low=np.array([-1, -1, 0, 0]), high=np.array([7, 7, 7, 10]), dtype=int)
 
-        self.llvm = LLVMController(file_path)
         self.selected_instruction = None  # current selected instruction
         self.schedulable_instructions = None
 
@@ -60,9 +60,10 @@ class LLVMEnv(gym.Env):
         done = len(self.schedulable_instructions) == 0
 
         if done:
+            reward = 1
             next_state = None
-            llvm_ir = self.llvm.write_module()
-            reward = -self.llvm.run(llvm_ir)*1000000
+            # llvm_ir = self.llvm.write_module()
+            # reward = -self.llvm.run(llvm_ir)*1000000
         else:
             reward = 0
             next_instruction_opcode = self.get_select_next_instruction(self.schedulable_instructions)
@@ -140,7 +141,6 @@ class LLVMController:
     def __init__(self, file_path):
         with open(file_path, 'r') as file:
             data = file.read()
-            self.llvm_file = file.readlines()
         with open(file_path, 'r') as file:
             self.llvm_file = file.readlines()
 
@@ -154,17 +154,34 @@ class LLVMController:
         self.scheduled_instructions = []
         self.schedulable_instructions = []
         self.block_instructions = self.get_block_instructions()
-        self.instructions_to_schedule = self.block_instructions[:-1]  # everything but the terminator instruction
+        
+        if len(self.block_instructions) == 1:
+            # TODO: duplicate code here
+            self.terminate_block()
+            self.curr_block += 1
+            if self.curr_block < len(self.blocks):
+                self.init_new_block()
+        else:
+            self.instructions_to_schedule = self.block_instructions[:-1] # everything but the terminator instruction
         self.memory_graph = create_memory_dependency_graph(self.blocks[self.curr_block])
 
     def get_blocks(self):
         blocks = []
+        # get all struct_types in a list
+        self.struct_types = []
+        for struct in self.mod.struct_types:
+            self.struct_types.append(str(struct).split(" = ")[0])
+
         for func in self.mod.functions:
             for block in func.blocks:
                 block_instructions = []
                 for instruction in block.instructions:
                     block_instructions.append(instruction)
                 blocks.append(block_instructions)
+        # with open("text.txt", "w") as f:
+        #     for b in blocks:
+        #         for i in b:
+        #             f.write(str(i, encoding='utf-8') + "\n")
         return blocks
 
     def get_block_instructions(self):
@@ -205,21 +222,34 @@ class LLVMController:
         self.rescheduled_blocks.append(self.scheduled_instructions)
 
     def write_module(self):
+        # print(self.llvm_file)
         for i, b in enumerate(self.blocks):
-            first_instruction = reformat_string(str(b[0]).strip())
-            last_instruction = reformat_string(str(b[-1]).strip())
+            first_instruction = reformat_string(str(b[0]), self.struct_types)
+            last_instruction = reformat_string(str(b[-1]), self.struct_types)
+
+            # print()
 
             start = self.llvm_file.index(first_instruction)
             end = self.llvm_file.index(last_instruction, start)
 
-            to_replace = [reformat_string(str(inst).strip()) for inst in self.rescheduled_blocks[i]]
+            # print(start)
+            # print(end)
+            # print(self.rescheduled_blocks[i])
 
-            self.llvm_file[start: end + 1] = to_replace
+            to_replace = [reformat_string(str(inst), self.struct_types) for inst in self.rescheduled_blocks[i]]
+
+            if len(b) != 1:
+                self.llvm_file[start: end + 1] = to_replace
+            else:
+                self.llvm_file[start: end] = to_replace
+
 
         llvm_ir = list_to_string(self.llvm_file)
         llvm_ir = rename_percentages(self.llvm_file, llvm_ir)
         #print(llvm_ir)
         return llvm_ir
+
+
 
     # def reset(self):
     #     self.curr_block = 0
@@ -281,7 +311,7 @@ class LLVMController:
         os.sched_setaffinity(pid, {0})
 
         # run the program ones without timing it
-        func()
+        print(func())
 
         min_time = 9999
         nb_runs = 100000

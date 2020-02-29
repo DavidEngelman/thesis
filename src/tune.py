@@ -6,21 +6,16 @@ import sys
 # controller = LLVMController("c_examples/dummy2.ll")
 # print(controller.llvm_file)
 
-filepath = sys.argv[1]
+# filepath = sys.argv[1]
+filepath = "../c-ray/c-ray-f-2.ll"
 
 env = LLVMEnv(filepath)
 n_state = env.reset()
-
-
-for i in range(1000000):
-    if i % 100 == 0:
-        print(i)
-    done = False
-    n_state = env.reset()
-    while not done:
-        # env.render()
-        action = env.action_space.sample()
-        n_state, reward, done, _ = env.step(action)
+done = False
+while not done:
+    #env.render()
+    action = env.action_space.sample()
+    n_state, reward, done, _ = env.step(action)
 
 
 

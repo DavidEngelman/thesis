@@ -46,14 +46,8 @@ def run(llvm_ir):
         func_ptr = engine.get_function_address("main")
 
         # Run the function via ctypes
-        string_set = [ 'Hello', "zqd" ]
-
-        select_type = (c_wchar_p * len(string_set))
-        select = select_type()
-        select[:] = string_set
-        print(select)
-        cfunc = CFUNCTYPE(c_int32, select_type)(func_ptr)
-        res = cfunc(2, select)
+        cfunc = CFUNCTYPE(c_int8)(func_ptr)
+        res = cfunc()
         print("program output:", res)
 
 
