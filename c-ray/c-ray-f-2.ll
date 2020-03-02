@@ -1,4 +1,4 @@
-; ModuleID = 'c-ray-f-2.c'
+; ModuleID = '../c-ray/c-ray-f-2.ll'
 source_filename = "c-ray-f-2.c"
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
@@ -404,7 +404,7 @@ define void @load_scene(%struct._IO_FILE*) #0 {
   %82 = getelementptr inbounds [16 x %struct.vec3], [16 x %struct.vec3]* @lights, i64 0, i64 %81
   %83 = bitcast %struct.vec3* %82 to i8*
   %84 = bitcast %struct.vec3* %7 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %83, i8* %84, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %83, i8* align 8 %84, i64 24, i1 false)
   br label %17
 
 ; <label>:85:                                     ; preds = %74
@@ -461,9 +461,9 @@ define void @load_scene(%struct._IO_FILE*) #0 {
 
 ; <label>:113:                                    ; preds = %109
   %114 = bitcast %struct.vec3* %7 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* bitcast (%struct.camera* @cam to i8*), i8* %114, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 bitcast (%struct.camera* @cam to i8*), i8* align 8 %114, i64 24, i1 false)
   %115 = bitcast %struct.vec3* %8 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* bitcast (%struct.vec3* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 1) to i8*), i8* %115, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 bitcast (%struct.vec3* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 1) to i8*), i8* align 8 %115, i64 24, i1 false)
   %116 = load double, double* %9, align 8
   store double %116, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 2), align 8
   br label %17
@@ -516,7 +516,7 @@ define void @load_scene(%struct._IO_FILE*) #0 {
   %145 = getelementptr inbounds %struct.sphere, %struct.sphere* %144, i32 0, i32 0
   %146 = bitcast %struct.vec3* %145 to i8*
   %147 = bitcast %struct.vec3* %7 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %146, i8* %147, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %146, i8* align 8 %147, i64 24, i1 false)
   %148 = load double, double* %9, align 8
   %149 = load %struct.sphere*, %struct.sphere** %12, align 8
   %150 = getelementptr inbounds %struct.sphere, %struct.sphere* %149, i32 0, i32 1
@@ -526,7 +526,7 @@ define void @load_scene(%struct._IO_FILE*) #0 {
   %153 = getelementptr inbounds %struct.material, %struct.material* %152, i32 0, i32 0
   %154 = bitcast %struct.vec3* %153 to i8*
   %155 = bitcast %struct.vec3* %8 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %154, i8* %155, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %154, i8* align 8 %155, i64 24, i1 false)
   %156 = load double, double* %10, align 8
   %157 = load %struct.sphere*, %struct.sphere** %12, align 8
   %158 = getelementptr inbounds %struct.sphere, %struct.sphere* %157, i32 0, i32 2
@@ -565,7 +565,7 @@ define i64 @get_msec() #0 {
   br i1 %4, label %5, label %6
 
 ; <label>:5:                                      ; preds = %0
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* bitcast (%struct.timeval* @get_msec.first_timeval to i8*), i8* bitcast (%struct.timeval* @get_msec.timeval to i8*), i64 16, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 bitcast (%struct.timeval* @get_msec.first_timeval to i8*), i8* align 8 bitcast (%struct.timeval* @get_msec.timeval to i8*), i64 16, i1 false)
   store i64 0, i64* %1, align 8
   br label %16
 
@@ -798,7 +798,7 @@ define void @trace(%struct.vec3* noalias sret, %struct.ray* byval align 8, i32) 
   store double 0.000000e+00, double* %19, align 8
   %20 = bitcast %struct.vec3* %0 to i8*
   %21 = bitcast %struct.vec3* %5 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %20, i8* %21, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %20, i8* align 8 %21, i64 24, i1 false)
   br label %63
 
 ; <label>:22:                                     ; preds = %3
@@ -833,7 +833,7 @@ define void @trace(%struct.vec3* noalias sret, %struct.ray* byval align 8, i32) 
   store %struct.sphere* %40, %struct.sphere** %8, align 8
   %41 = bitcast %struct.spoint* %7 to i8*
   %42 = bitcast %struct.spoint* %6 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %41, i8* %42, i64 80, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %41, i8* align 8 %42, i64 80, i1 false)
   br label %43
 
 ; <label>:43:                                     ; preds = %39, %33
@@ -857,7 +857,7 @@ define void @trace(%struct.vec3* noalias sret, %struct.ray* byval align 8, i32) 
   call void @shade(%struct.vec3* sret %10, %struct.sphere* %52, %struct.spoint* %7, i32 %53)
   %54 = bitcast %struct.vec3* %5 to i8*
   %55 = bitcast %struct.vec3* %10 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %54, i8* %55, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %54, i8* align 8 %55, i64 24, i1 false)
   br label %60
 
 ; <label>:56:                                     ; preds = %48
@@ -872,7 +872,7 @@ define void @trace(%struct.vec3* noalias sret, %struct.ray* byval align 8, i32) 
 ; <label>:60:                                     ; preds = %56, %51
   %61 = bitcast %struct.vec3* %0 to i8*
   %62 = bitcast %struct.vec3* %5 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %61, i8* %62, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %61, i8* align 8 %62, i64 24, i1 false)
   br label %63
 
 ; <label>:63:                                     ; preds = %60, %16
@@ -900,7 +900,7 @@ define void @get_primary_ray(%struct.ray* noalias sret, i32, i32, i32) #0 {
   store i32 %2, i32* %6, align 4
   store i32 %3, i32* %7, align 4
   %20 = bitcast %struct.vec3* %11 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %20, i8* bitcast (%struct.vec3* @get_primary_ray.j to i8*), i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %20, i8* align 8 bitcast (%struct.vec3* @get_primary_ray.j to i8*), i64 24, i1 false)
   %21 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 1, i32 0), align 8
   %22 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 0, i32 0), align 8
   %23 = fsub double %21, %22
@@ -959,11 +959,11 @@ define void @get_primary_ray(%struct.ray* noalias sret, i32, i32, i32) #0 {
   call void @cross_product(%struct.vec3* sret %17, %struct.vec3* byval align 8 %11, %struct.vec3* byval align 8 %12)
   %65 = bitcast %struct.vec3* %10 to i8*
   %66 = bitcast %struct.vec3* %17 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %65, i8* %66, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %65, i8* align 8 %66, i64 24, i1 false)
   call void @cross_product(%struct.vec3* sret %18, %struct.vec3* byval align 8 %12, %struct.vec3* byval align 8 %10)
   %67 = bitcast %struct.vec3* %11 to i8*
   %68 = bitcast %struct.vec3* %18 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %67, i8* %68, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %67, i8* align 8 %68, i64 24, i1 false)
   %69 = getelementptr inbounds %struct.vec3, %struct.vec3* %10, i32 0, i32 0
   %70 = load double, double* %69, align 8
   %71 = fptrunc double %70 to float
@@ -1034,7 +1034,7 @@ define void @get_primary_ray(%struct.ray* noalias sret, i32, i32, i32) #0 {
   call void @get_sample_pos(%struct.vec3* sret %19, i32 %121, i32 %122, i32 %123)
   %124 = bitcast %struct.vec3* %120 to i8*
   %125 = bitcast %struct.vec3* %19 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %124, i8* %125, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %124, i8* align 8 %125, i64 24, i1 false)
   %126 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 1
   %127 = getelementptr inbounds %struct.vec3, %struct.vec3* %126, i32 0, i32 2
   store double 0x40045F306F4445A0, double* %127, align 8
@@ -1248,7 +1248,7 @@ define void @get_primary_ray(%struct.ray* noalias sret, i32, i32, i32) #0 {
   %323 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
   %324 = bitcast %struct.vec3* %323 to i8*
   %325 = bitcast %struct.vec3* %14 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %324, i8* %325, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %324, i8* align 8 %325, i64 24, i1 false)
   %326 = getelementptr inbounds %struct.vec3, %struct.vec3* %15, i32 0, i32 0
   %327 = load double, double* %326, align 8
   %328 = getelementptr inbounds %struct.vec3, %struct.vec3* %14, i32 0, i32 0
@@ -1275,12 +1275,9 @@ define void @get_primary_ray(%struct.ray* noalias sret, i32, i32, i32) #0 {
   store double %344, double* %346, align 8
   %347 = bitcast %struct.ray* %0 to i8*
   %348 = bitcast %struct.ray* %8 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %347, i8* %348, i64 48, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %347, i8* align 8 %348, i64 48, i1 false)
   ret void
 }
-
-; Function Attrs: argmemonly nounwind
-declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i32, i1) #3
 
 ; Function Attrs: noinline nounwind optnone uwtable
 define i32 @ray_sphere(%struct.sphere*, %struct.ray* byval align 8, %struct.spoint*) #0 {
@@ -1662,7 +1659,7 @@ define i32 @ray_sphere(%struct.sphere*, %struct.ray* byval align 8, %struct.spoi
   call void @reflect(%struct.vec3* sret %14, %struct.vec3* byval align 8 %326, %struct.vec3* byval align 8 %328)
   %329 = bitcast %struct.vec3* %325 to i8*
   %330 = bitcast %struct.vec3* %14 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %329, i8* %330, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %329, i8* align 8 %330, i64 24, i1 false)
   br label %331
 
 ; <label>:331:                                    ; preds = %230
@@ -1753,7 +1750,7 @@ define void @shade(%struct.vec3* noalias sret, %struct.sphere*, %struct.spoint*,
   store %struct.spoint* %2, %struct.spoint** %6, align 8
   store i32 %3, i32* %7, align 4
   %20 = bitcast %struct.vec3* %9 to i8*
-  call void @llvm.memset.p0i8.i64(i8* %20, i8 0, i64 24, i32 8, i1 false)
+  call void @llvm.memset.p0i8.i64(i8* align 8 %20, i8 0, i64 24, i1 false)
   store i32 0, i32* %8, align 4
   br label %21
 
@@ -1810,11 +1807,11 @@ define void @shade(%struct.vec3* noalias sret, %struct.sphere*, %struct.spoint*,
   %64 = getelementptr inbounds %struct.spoint, %struct.spoint* %63, i32 0, i32 0
   %65 = bitcast %struct.vec3* %62 to i8*
   %66 = bitcast %struct.vec3* %64 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %65, i8* %66, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %65, i8* align 8 %66, i64 24, i1 false)
   %67 = getelementptr inbounds %struct.ray, %struct.ray* %13, i32 0, i32 1
   %68 = bitcast %struct.vec3* %67 to i8*
   %69 = bitcast %struct.vec3* %12 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %68, i8* %69, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %68, i8* align 8 %69, i64 24, i1 false)
   br label %70
 
 ; <label>:70:                                     ; preds = %78, %25
@@ -2085,13 +2082,13 @@ define void @shade(%struct.vec3* noalias sret, %struct.sphere*, %struct.spoint*,
   %283 = getelementptr inbounds %struct.spoint, %struct.spoint* %282, i32 0, i32 0
   %284 = bitcast %struct.vec3* %281 to i8*
   %285 = bitcast %struct.vec3* %283 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %284, i8* %285, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %284, i8* align 8 %285, i64 24, i1 false)
   %286 = getelementptr inbounds %struct.ray, %struct.ray* %17, i32 0, i32 1
   %287 = load %struct.spoint*, %struct.spoint** %6, align 8
   %288 = getelementptr inbounds %struct.spoint, %struct.spoint* %287, i32 0, i32 2
   %289 = bitcast %struct.vec3* %286 to i8*
   %290 = bitcast %struct.vec3* %288 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %289, i8* %290, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %289, i8* align 8 %290, i64 24, i1 false)
   %291 = getelementptr inbounds %struct.ray, %struct.ray* %17, i32 0, i32 1
   %292 = getelementptr inbounds %struct.vec3, %struct.vec3* %291, i32 0, i32 0
   %293 = load double, double* %292, align 8
@@ -2112,7 +2109,7 @@ define void @shade(%struct.vec3* noalias sret, %struct.sphere*, %struct.spoint*,
   call void @trace(%struct.vec3* sret %19, %struct.ray* byval align 8 %17, i32 %304)
   %305 = bitcast %struct.vec3* %18 to i8*
   %306 = bitcast %struct.vec3* %19 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %305, i8* %306, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %305, i8* align 8 %306, i64 24, i1 false)
   %307 = getelementptr inbounds %struct.vec3, %struct.vec3* %18, i32 0, i32 0
   %308 = load double, double* %307, align 8
   %309 = load %struct.sphere*, %struct.sphere** %5, align 8
@@ -2151,12 +2148,9 @@ define void @shade(%struct.vec3* noalias sret, %struct.sphere*, %struct.spoint*,
 ; <label>:337:                                    ; preds = %280, %274
   %338 = bitcast %struct.vec3* %0 to i8*
   %339 = bitcast %struct.vec3* %9 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %338, i8* %339, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %338, i8* align 8 %339, i64 24, i1 false)
   ret void
 }
-
-; Function Attrs: argmemonly nounwind
-declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i32, i1) #3
 
 ; Function Attrs: nounwind
 declare double @sqrt(double) #2
@@ -2221,7 +2215,7 @@ define void @reflect(%struct.vec3* noalias sret, %struct.vec3* byval align 8, %s
   store double %51, double* %52, align 8
   %53 = bitcast %struct.vec3* %0 to i8*
   %54 = bitcast %struct.vec3* %4 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %53, i8* %54, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %53, i8* align 8 %54, i64 24, i1 false)
   ret void
 }
 
@@ -2269,7 +2263,7 @@ define void @cross_product(%struct.vec3* noalias sret, %struct.vec3* byval align
   store double %39, double* %40, align 8
   %41 = bitcast %struct.vec3* %0 to i8*
   %42 = bitcast %struct.vec3* %4 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %41, i8* %42, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %41, i8* align 8 %42, i64 24, i1 false)
   ret void
 }
 
@@ -2354,7 +2348,7 @@ define void @get_sample_pos(%struct.vec3* noalias sret, i32, i32, i32) #0 {
 ; <label>:62:                                     ; preds = %42, %22
   %63 = bitcast %struct.vec3* %0 to i8*
   %64 = bitcast %struct.vec3* %8 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %63, i8* %64, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %63, i8* align 8 %64, i64 24, i1 false)
   ret void
 }
 
@@ -2407,7 +2401,7 @@ define void @jitter(%struct.vec3* noalias sret, i32, i32, i32) #0 {
   store double %43, double* %44, align 8
   %45 = bitcast %struct.vec3* %0 to i8*
   %46 = bitcast %struct.vec3* %8 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %45, i8* %46, i64 24, i32 8, i1 false)
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %45, i8* align 8 %46, i64 24, i1 false)
   ret void
 }
 
@@ -2417,16 +2411,22 @@ declare i8* @fgets(i8*, i32, %struct._IO_FILE*) #1
 declare i8* @strtok(i8*, i8*) #2
 
 ; Function Attrs: nounwind readonly
-declare double @atof(i8*) #4
+declare double @atof(i8*) #3
 
 ; Function Attrs: nounwind
 declare i32 @gettimeofday(%struct.timeval*, %struct.timezone*) #2
 
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1) #4
+
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1) #4
+
 attributes #0 = { noinline nounwind optnone uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #2 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #3 = { argmemonly nounwind }
-attributes #4 = { nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { argmemonly nounwind }
 attributes #5 = { nounwind }
 attributes #6 = { nounwind readonly }
 

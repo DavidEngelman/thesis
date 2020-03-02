@@ -34,7 +34,10 @@ def rename_percentages(f_list, f_string):
     for line in f_list:
         if len(line.strip()) != 0 and line.strip()[0] == "%":
             real_instr_num = line.strip().split(" ")[0][1:]
-            var_num.append(int(real_instr_num))
+            try:
+                var_num.append(int(real_instr_num))
+            except ValueError:
+                pass
 
     var_num.sort()
     i = 0
@@ -51,6 +54,7 @@ def rename_percentages(f_list, f_string):
     new_file = new_file.replace("@&@'", '%')
     return new_file
 
+
 def create_dependency_graphs(block):
     """An instruction depend on another one if it contains it in its operand"""
     instr_g = nx.DiGraph()
@@ -62,7 +66,6 @@ def create_dependency_graphs(block):
             mem_g.add_node(i)
             # add dependency between node i and all memory node before it
             mem_g.add_edges_from([(node, i) for node in list(mem_g.nodes)[:-1]])
-
 
     # create instr dependencies
     nodes_combinations = it.combinations(instr_g.nodes, 2)

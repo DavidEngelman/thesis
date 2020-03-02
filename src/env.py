@@ -172,6 +172,7 @@ class LLVMController:
             for block in func.blocks:
                 block_instructions = []
                 for instruction in block.instructions:
+                    print(instruction)
                     block_instructions.append(instruction)
                 blocks.append(block_instructions)
         return blocks
@@ -207,6 +208,14 @@ class LLVMController:
                 return []
 
         self.schedulable_instructions = []
+
+        if len(self.block_instructions) == 1:
+            self.curr_block += 1
+            if self.curr_block < len(self.blocks):
+                self.init_new_block()
+            self.rescheduled_blocks.append(self.scheduled_instructions)
+            return [self.block_instructions[0]]
+
         for instruction in list(self.curr_instr_graph.nodes())[:-1]:
             if self.is_schedulable(instruction):
                 self.schedulable_instructions.append(instruction)
@@ -294,7 +303,7 @@ class LLVMController:
     def run(self, llvm_ir):
         llvm.initialize()
         llvm.initialize_native_target()
-        llvm.initialize_native_asmprinter()  # yes, even this one
+        llvm.initialize_native_asmprinter()
         engine = self.create_execution_engine()
         mod = self.compile_ir(engine, llvm_ir)
 
