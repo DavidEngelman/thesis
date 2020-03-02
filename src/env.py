@@ -46,15 +46,17 @@ class LLVMEnv(gym.Env):
         # last 2 scheduled instructions's opcode
         self.history = collections.deque([-1, -1], 2)
 
+        self.llvm = LLVMController(self.file_path)
+
     def step(self, action):
 
         # if the agent has chosen to schedule the instruction
-
         if action == 0:
-            self.llvm.instructions_to_schedule.remove(self.selected_instruction)
-            self.llvm.instr_graph.remove_node(self.selected_instruction)
+            self.llvm.curr_instr_graph.remove_node(self.selected_instruction)
+
             if self.selected_instruction.opcode in MEMORY_INSTR:
-                self.llvm.memory_graph.remove_node(self.selected_instruction)
+                self.llvm.curr_memory_graph.remove_node(self.selected_instruction)
+
             self.llvm.scheduled_instructions.append(self.selected_instruction)
             # update the schedulable instruction list
             self.schedulable_instructions = self.llvm.find_schedulable_instructions()
@@ -65,11 +67,11 @@ class LLVMEnv(gym.Env):
         if done:
             reward = 1
             next_state = None
-            # llvm_ir = self.llvm.write_module()
-            # reward = -self.llvm.run(llvm_ir)*1000000
+            llvm_ir = self.llvm.write_module()
+            reward = -self.llvm.run(llvm_ir) * 1000000
         else:
             reward = 0
-            next_instruction_opcode = self.get_select_next_instruction(self.schedulable_instructions)
+            next_instruction_opcode = self.select_next_instruction(self.schedulable_instructions)
             next_state = self.update_state(next_instruction_opcode)
 
         return next_state, reward, done, {}
@@ -82,7 +84,7 @@ class LLVMEnv(gym.Env):
         state.append(operands_ages)
         return np.array(state)
 
-    def get_select_next_instruction(self, instructions):
+    def select_next_instruction(self, instructions):
         """
         Chooses 1 instruction among the schedulables ones to be proposed to the agent
         update the selected_instruction attribute and return the opcode of the instruction
@@ -129,12 +131,13 @@ class LLVMEnv(gym.Env):
             print(instr)
         print('------')
 
-
     def reset(self):
-        self.llvm = LLVMController(self.file_path)
+        self.llvm.reset()
+        self.selected_instruction = None
+        self.schedulable_instructions = None
         self.history = collections.deque([-1, -1], 2)
         self.schedulable_instructions = self.llvm.find_schedulable_instructions()
-        next_instruction_opcode = self.get_select_next_instruction(self.schedulable_instructions)
+        next_instruction_opcode = self.select_next_instruction(self.schedulable_instructions)
         next_state = self.update_state(next_instruction_opcode)
         return next_state
 
@@ -148,47 +151,50 @@ class LLVMController:
             self.llvm_file = file.readlines()
 
         self.mod = llvm.parse_assembly(data)  # module from the inpute file
+
         self.blocks = self.get_blocks()
+        self.instr_graphs, self.memory_graphs = self.create_all_graphs()
+
         self.curr_block = 0
         self.rescheduled_blocks = []  # blocks with new order of instructions
-        self.init_new_block()
+        self.curr_llvm_file = copy.deepcopy(self.llvm_file)
 
-    def init_new_block(self):
+        self.block_instructions = []
         self.scheduled_instructions = []
         self.schedulable_instructions = []
-        self.block_instructions = self.get_block_instructions()
-        
-        if len(self.block_instructions) == 1:
-            # TODO: duplicate code here
-            self.terminate_block()
-            self.curr_block += 1
-            if self.curr_block < len(self.blocks):
-                self.init_new_block()
-        else:
-            self.instructions_to_schedule = self.block_instructions[:-1] # everything but the terminator instruction
-        self.instr_graph, self.memory_graph = create_dependency_graphs(self.instructions_to_schedule)
+
+        self.curr_instr_graph = None
+        self.curr_memory_graph = None
 
     def get_blocks(self):
         blocks = []
-        # get all struct_types in a list
-        self.struct_types = []
-        for struct in self.mod.struct_types:
-            self.struct_types.append(str(struct).split(" = ")[0])
-
         for func in self.mod.functions:
             for block in func.blocks:
                 block_instructions = []
                 for instruction in block.instructions:
                     block_instructions.append(instruction)
                 blocks.append(block_instructions)
-        # with open("text.txt", "w") as f:
-        #     for b in blocks:
-        #         for i in b:
-        #             f.write(str(i, encoding='utf-8') + "\n")
         return blocks
+
+    def create_all_graphs(self):
+        """create de instructions dependency and memory dependency graphs for all blocks"""
+        instr_graphs = []
+        memory_graphs = []
+        for block in self.blocks:
+            instr_graph, memory_graph = create_dependency_graphs(block)
+            instr_graphs.append(instr_graph)
+            memory_graphs.append(memory_graph)
+        return instr_graphs, memory_graphs
 
     def get_block_instructions(self):
         return self.blocks[self.curr_block]
+
+    def init_new_block(self):
+        self.scheduled_instructions = []
+        self.block_instructions = self.get_block_instructions()
+
+        self.curr_instr_graph = self.instr_graphs[self.curr_block].copy()
+        self.curr_memory_graph = self.memory_graphs[self.curr_block].copy()
 
     def find_schedulable_instructions(self):
         # check if we need to start to schedule a new block
@@ -197,18 +203,20 @@ class LLVMController:
             self.curr_block += 1
             if self.curr_block < len(self.blocks):
                 self.init_new_block()
+            else:
+                return []
 
         self.schedulable_instructions = []
-        for instruction in self.instr_graph.nodes():
+        for instruction in list(self.curr_instr_graph.nodes())[:-1]:
             if self.is_schedulable(instruction):
                 self.schedulable_instructions.append(instruction)
 
         return self.schedulable_instructions
 
     def is_schedulable(self, instruction):
-        if instruction.opcode in MEMORY_INSTR and self.memory_graph.in_degree(instruction) != 0:
+        if instruction.opcode in MEMORY_INSTR and self.curr_memory_graph.in_degree(instruction) != 0:
             return False
-        if self.instr_graph.in_degree(instruction) != 0:
+        if self.curr_instr_graph.in_degree(instruction) != 0:
             return False
         return True
 
@@ -223,37 +231,35 @@ class LLVMController:
     def write_module(self):
         # print(self.llvm_file)
         for i, b in enumerate(self.blocks):
-            first_instruction = reformat_string(str(b[0]), self.struct_types)
-            last_instruction = reformat_string(str(b[-1]), self.struct_types)
+            first_instruction = reformat_string(str(b[0]))
+            last_instruction = reformat_string(str(b[-1]))
 
             # print()
 
-            start = self.llvm_file.index(first_instruction)
-            end = self.llvm_file.index(last_instruction, start)
+            start = self.curr_llvm_file.index(first_instruction)
+            end = self.curr_llvm_file.index(last_instruction, start)
 
             # print(start)
             # print(end)
             # print(self.rescheduled_blocks[i])
 
-            to_replace = [reformat_string(str(inst), self.struct_types) for inst in self.rescheduled_blocks[i]]
+            to_replace = [reformat_string(str(inst)) for inst in self.rescheduled_blocks[i]]
 
             if len(b) != 1:
-                self.llvm_file[start: end + 1] = to_replace
+                self.curr_llvm_file[start: end + 1] = to_replace
             else:
-                self.llvm_file[start: end] = to_replace
+                self.curr_llvm_file[start: end] = to_replace
 
-
-        llvm_ir = list_to_string(self.llvm_file)
-        llvm_ir = rename_percentages(self.llvm_file, llvm_ir)
-        #print(llvm_ir)
+        llvm_ir = list_to_string(self.curr_llvm_file)
+        llvm_ir = rename_percentages(self.curr_llvm_file, llvm_ir)
         return llvm_ir
 
-
-
-    # def reset(self):
-    #     self.curr_block = 0
-    #     self.rescheduled_blocks = []
-    #     self.init_new_block()
+    def reset(self):
+        self.curr_llvm_file = copy.deepcopy(self.llvm_file)
+        self.curr_block = 0
+        self.rescheduled_blocks = []
+        self.schedulable_instructions = []
+        self.init_new_block()
 
     @staticmethod
     def create_execution_engine():
@@ -321,7 +327,6 @@ class LLVMController:
             ex_time = end - start
             if ex_time < min_time:
                 min_time = ex_time
-        
 
         os.sched_setaffinity(pid, {0, 1, 2, 3})
         # print("done in " + str(time.perf_counter() - start) + " s")
@@ -342,7 +347,6 @@ class LLVMController:
         func()
 
         min_time = min(timeit.repeat(func, number=1, repeat=1))
-        
 
         os.sched_setaffinity(pid, {0, 1, 2, 3})
         # print("done in " + str(time.perf_counter() - start) + " s")

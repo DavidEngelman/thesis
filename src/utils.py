@@ -6,7 +6,7 @@ import re
 MEMORY_INSTR = ["load", "store"]
 
 
-def reformat_string(s, struct_types):
+def reformat_string(s):
     # # handle struct variable case:
     # s = handle_struct(s, struct_types)
     s = s + "\n"
