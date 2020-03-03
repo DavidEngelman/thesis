@@ -13,47 +13,56 @@ def reformat_string(s):
     return s
 
 
-# def handle_struct(s, struct_types):
-#     if len(struct_types) == 0:
-#         return s
-#     for struct in struct_types:
-#         if struct in s:
-#             print('s')
-#             print(s)
-#             print('struct')
-#             print(struct)
-#             s_ok = re.sub(rf"{struct}[.]\d", struct, s)
-#             print("s_ok")
-#             print(s_ok)
-#             return s_ok
-#             # TODO check que c'est ok
-#     return s
-
-def rename_percentages(f_list, f_string):
-    var_num = []
-    for line in f_list:
-        if len(line.strip()) != 0 and line.strip()[0] == "%":
-            real_instr_num = line.strip().split(" ")[0][1:]
-            try:
-                var_num.append(int(real_instr_num))
-            except ValueError:
-                pass
-
-    var_num.sort()
+def rename_with_prefix(items, _from, to, to_ignore, names):
+    res = items
     i = 0
-    new_file = f_string
-    for line in f_list:
+    for line in items:
+        if len(line.strip()) != 0 and line.strip()[0] == "%":
+            # print(line, i, len(names))
+            var_name = line.strip().split(" ")[0][1:]
+            if var_name in to_ignore:
+                continue
+            for index, instr in enumerate(items):
+                res = [re.sub(rf"[{_from}{var_name}]", to + str(names[i]), instr) for instr in res]
+                res[index] = instr
+            i += 1
+
+    return res
+
+
+def rename_variables(f_string, f_list, start, end):
+    names = []
+    to_ignore = []
+    for line in f_list[start:end + 1]:
+        if len(line.strip()) != 0 and line.strip()[0] == "%":
+            var_name = line.strip().split(" ")[0][1:]
+            try:
+                names.append(int(var_name))
+            except ValueError:
+                to_ignore.append(var_name)
+
+    names.sort()
+    i = 0
+
+    string_start, string_end = f_string.find(f_list[start]), f_string.find(f_list[end])
+    to_replace = f_string[string_start:string_end + 1]
+    for line in f_list[start:end+1]:
         if len(line.strip()) != 0 and line.strip()[0] == "%":
             real_instr_num = line.strip().split(" ")[0][1:]
+            if real_instr_num in to_ignore:
+                continue
 
-            new_file = new_file.replace("%" + str(real_instr_num) + " ", "@&@'" + str(var_num[i]) + " ")
-            new_file = new_file.replace("%" + str(real_instr_num) + ",", "@&@'" + str(var_num[i]) + ",")
-            new_file = new_file.replace("%" + str(real_instr_num) + "\n", "@&@'" + str(var_num[i]) + "\n")
+            to_replace = to_replace.replace("%" + str(real_instr_num) + " ", "@&@'" + str(names[i]) + " ")
+            to_replace = to_replace.replace("%" + str(real_instr_num) + ",", "@&@'" + str(names[i]) + ",")
+            to_replace = to_replace.replace("%" + str(real_instr_num) + "\n", "@&@'" + str(names[i]) + "\n")
 
             i += 1
-    new_file = new_file.replace("@&@'", '%')
-    return new_file
 
+    to_replace = to_replace.replace("@&@'", '%')
+
+    f_string.replace(f_string[string_start:string_end + 1], to_replace)
+
+    return f_string
 
 def create_dependency_graphs(block):
     """An instruction depend on another one if it contains it in its operand"""

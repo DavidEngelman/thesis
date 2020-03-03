@@ -65,10 +65,8 @@ class LLVMEnv(gym.Env):
         done = len(self.schedulable_instructions) == 0
 
         if done:
-            reward = 1
             next_state = None
-            llvm_ir = self.llvm.write_module()
-            reward = -self.llvm.run(llvm_ir) * 1000000
+            reward = -self.llvm.run(self.llvm.string_file) * 1000000
         else:
             reward = 0
             next_instruction_opcode = self.select_next_instruction(self.schedulable_instructions)
@@ -152,11 +150,14 @@ class LLVMController:
 
         self.mod = llvm.parse_assembly(data)  # module from the inpute file
 
-        self.blocks = self.get_blocks()
+        # self.blocks = self.get_blocks()
+        self.functions = self.get_functions()
         self.instr_graphs, self.memory_graphs = self.create_all_graphs()
 
+        self.curr_function = 0
         self.curr_block = 0
-        self.rescheduled_blocks = []  # blocks with new order of instructions
+
+        self.reordered_blocks = []  # blocks of a function with new order of instructions
         self.curr_llvm_file = copy.deepcopy(self.llvm_file)
 
         self.block_instructions = []
@@ -166,43 +167,68 @@ class LLVMController:
         self.curr_instr_graph = None
         self.curr_memory_graph = None
 
-    def get_blocks(self):
-        blocks = []
+        self.function_start = 0
+
+        # def get_blocks(self):
+
+    #     blocks = []
+    #     for func in self.mod.functions:
+    #         for block in func.blocks:
+    #             block_instructions = []
+    #             for instruction in block.instructions:
+    #                 print(instruction)
+    #                 block_instructions.append(instruction)
+    #             blocks.append(block_instructions)
+    #     return blocks
+
+    def get_functions(self):
+        functions = []
         for func in self.mod.functions:
+            function_blocks = []
             for block in func.blocks:
                 block_instructions = []
                 for instruction in block.instructions:
-                    print(instruction)
                     block_instructions.append(instruction)
-                blocks.append(block_instructions)
-        return blocks
+                function_blocks.append(block_instructions)
+            if len(function_blocks):
+                functions.append(function_blocks)
+        return functions
 
     def create_all_graphs(self):
         """create de instructions dependency and memory dependency graphs for all blocks"""
         instr_graphs = []
         memory_graphs = []
-        for block in self.blocks:
-            instr_graph, memory_graph = create_dependency_graphs(block)
-            instr_graphs.append(instr_graph)
-            memory_graphs.append(memory_graph)
+        for function in self.functions:
+            for block in function:
+                instr_graph, memory_graph = create_dependency_graphs(block)
+                instr_graphs.append(instr_graph)
+                memory_graphs.append(memory_graph)
         return instr_graphs, memory_graphs
 
     def get_block_instructions(self):
-        return self.blocks[self.curr_block]
+        return self.functions[self.curr_function][self.curr_block]
 
     def init_new_block(self):
         self.scheduled_instructions = []
         self.block_instructions = self.get_block_instructions()
-
         self.curr_instr_graph = self.instr_graphs[self.curr_block].copy()
         self.curr_memory_graph = self.memory_graphs[self.curr_block].copy()
+
+    def update_counters(self):
+        self.curr_block += 1
+        # check if a function is done
+        if self.curr_block == len(self.functions[self.curr_function]):
+            self.write_reordered_function()
+            self.curr_block = 0
+            self.curr_function += 1
+            self.reordered_blocks = []
 
     def find_schedulable_instructions(self):
         # check if we need to start to schedule a new block
         if len(self.scheduled_instructions) == (len(self.block_instructions) - 1):
             self.terminate_block()
-            self.curr_block += 1
-            if self.curr_block < len(self.blocks):
+            self.update_counters()
+            if self.curr_function < len(self.functions):
                 self.init_new_block()
             else:
                 return []
@@ -210,10 +236,10 @@ class LLVMController:
         self.schedulable_instructions = []
 
         if len(self.block_instructions) == 1:
-            self.curr_block += 1
-            if self.curr_block < len(self.blocks):
+            self.update_counters()
+            if self.curr_function < len(self.functions):
                 self.init_new_block()
-            self.rescheduled_blocks.append(self.scheduled_instructions)
+            self.reordered_blocks.append(self.scheduled_instructions)
             return [self.block_instructions[0]]
 
         for instruction in list(self.curr_instr_graph.nodes())[:-1]:
@@ -235,40 +261,44 @@ class LLVMController:
     def terminate_block(self):
         # add the terminator instruction
         self.scheduled_instructions.append(self.block_instructions[-1])
-        self.rescheduled_blocks.append(self.scheduled_instructions)
+        self.reordered_blocks.append(self.scheduled_instructions)
 
-    def write_module(self):
-        # print(self.llvm_file)
-        for i, b in enumerate(self.blocks):
-            first_instruction = reformat_string(str(b[0]))
-            last_instruction = reformat_string(str(b[-1]))
+    def write_reordered_function(self):
 
-            # print()
+        function_first_instruction = reformat_string(str(self.reordered_blocks[0][0]))
+        function_last_instruction = reformat_string(str(self.reordered_blocks[-1][-1]))
 
-            start = self.curr_llvm_file.index(first_instruction)
-            end = self.curr_llvm_file.index(last_instruction, start)
+        function_start_index = self.curr_llvm_file.index(function_first_instruction)
+        self.function_start = function_start_index
+        function_end_index = self.curr_llvm_file.index(function_last_instruction)
 
-            # print(start)
-            # print(end)
-            # print(self.rescheduled_blocks[i])
+        for i, b in enumerate(self.reordered_blocks):
+            block_first_instruction = reformat_string(str(b[0]))
+            block_last_instruction = reformat_string(str(b[-1]))
 
-            to_replace = [reformat_string(str(inst)) for inst in self.rescheduled_blocks[i]]
+            start = self.curr_llvm_file.index(block_first_instruction)
+            end = self.curr_llvm_file.index(block_last_instruction, start)
 
+            to_replace = [reformat_string(str(inst)) for inst in self.reordered_blocks[i]]
             if len(b) != 1:
                 self.curr_llvm_file[start: end + 1] = to_replace
             else:
                 self.curr_llvm_file[start: end] = to_replace
 
-        llvm_ir = list_to_string(self.curr_llvm_file)
-        llvm_ir = rename_percentages(self.curr_llvm_file, llvm_ir)
-        return llvm_ir
+        self.string_file = rename_variables(self.string_file,self.curr_llvm_file, function_start_index, function_end_index)
 
     def reset(self):
+
         self.curr_llvm_file = copy.deepcopy(self.llvm_file)
+        self.string_file = list_to_string(self.curr_llvm_file)
         self.curr_block = 0
-        self.rescheduled_blocks = []
+        self.curr_function = 0
+
+        self.reordered_blocks = []
         self.schedulable_instructions = []
         self.init_new_block()
+
+        self.function_start = 0
 
     @staticmethod
     def create_execution_engine():
@@ -325,7 +355,7 @@ class LLVMController:
         os.sched_setaffinity(pid, {0})
 
         # run the program ones without timing it
-        # print(func())
+        print(func())
 
         min_time = 9999
         nb_runs = 100000
