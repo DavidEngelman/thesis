@@ -5,6 +5,8 @@ import random
 import re
 import time
 import timeit
+import subprocess
+import resource
 from ctypes import CFUNCTYPE, c_int32
 
 import gym
@@ -12,17 +14,11 @@ import llvmlite.binding as llvm
 import llvmlite.ir as ll
 import numpy as np
 from gym import spaces
-import sys
+
 
 from .utils import * 
 
-def sizeof_fmt(num, suffix='B'):
-    ''' by Fred Cirera,  https://stackoverflow.com/a/1094933/1870254, modified'''
-    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
-        if abs(num) < 1024.0:
-            return "%3.1f %s%s" % (num, unit, suffix)
-        num /= 1024.0
-    return num
+NB_RUNS = 10
 
 
 MEMORY = {}
@@ -74,24 +70,29 @@ class LLVMEnv(gym.Env):
 
         self.llvm = LLVMController(self.file_path)
 
+    def add_instruction(self):
+        self.llvm.curr_instr_graph.remove_node(self.selected_instruction)
+        if self.selected_instruction.opcode in MEMORY_INSTR:
+            self.llvm.curr_memory_graph.remove_node(self.selected_instruction)
+
+        self.llvm.scheduled_instructions.append(self.selected_instruction)
+        # update the schedulable instruction list
+        self.schedulable_instructions = self.llvm.find_schedulable_instructions()
+        self.history.append(self.to_opcode(self.selected_instruction))
         
 
     def step(self, action):
 
         # memory_profile(MEMORY)
-
+        self.nb_shedulables.append(len(self.schedulable_instructions))
+        
+        # if one choice for the next instruction to schedule
+        if len(self.schedulable_instructions) == 1:
+            self.add_instruction()
 
         # if the agent has chosen to schedule the instruction
-        if action == 0:
-            self.llvm.curr_instr_graph.remove_node(self.selected_instruction)
-
-            if self.selected_instruction.opcode in MEMORY_INSTR:
-                self.llvm.curr_memory_graph.remove_node(self.selected_instruction)
-
-            self.llvm.scheduled_instructions.append(self.selected_instruction)
-            # update the schedulable instruction list
-            self.schedulable_instructions = self.llvm.find_schedulable_instructions()
-            self.history.append(self.to_opcode(self.selected_instruction))
+        elif action == 0:
+            self.add_instruction()
 
         done = len(self.schedulable_instructions) == 0
 
@@ -100,6 +101,7 @@ class LLVMEnv(gym.Env):
             next_state = None
             # * 1000000
             reward = -self.llvm.run(self.llvm.string_file, self.timer) * self.reward_scaler
+            print(f"[episode done] reward: {reward} -- avg. nb of  shedul. instr.: {np.mean(self.nb_shedulables)}")
         else:
             reward = 0
             next_instruction_opcode = self.select_next_instruction(self.schedulable_instructions)
@@ -146,7 +148,7 @@ class LLVMEnv(gym.Env):
         Chooses 1 instruction among the schedulables ones to be proposed to the agent
         update the selected_instruction attribute and return the opcode of the instruction
         """
-        self.selected_instruction = random.sample(instructions, 1)[0]
+        self.selected_instruction =  random.sample(instructions, 1)[0]
         instruction_opcode = self.to_opcode(self.selected_instruction)
         return instruction_opcode
 
@@ -198,8 +200,10 @@ class LLVMEnv(gym.Env):
         self.schedulable_instructions = None
         self.history = collections.deque([0, 0], 2)
         self.schedulable_instructions = self.llvm.find_schedulable_instructions()
+        self.nb_shedulables = []
         next_instruction_opcode = self.select_next_instruction(self.schedulable_instructions)
         next_state = self.update_state(next_instruction_opcode)
+
         return next_state
 
 
@@ -360,100 +364,21 @@ class LLVMController:
 
         self.function_start = 0
 
-    @staticmethod
-    def create_execution_engine():
-        """
-        Create an ExecutionEngine suitable for JIT code generation on
-        the host CPU.  The engine is reusable for an arbitrary number of
-        modules.
-        """
-        # Create a target machine representing the host
-        target = llvm.Target.from_default_triple()
-        target_machine = target.create_target_machine()
-        # And an execution engine with an empty backing module
-        backing_mod = llvm.parse_assembly("")
-        engine = llvm.create_mcjit_compiler(backing_mod, target_machine)
-        return engine
-
-    @staticmethod
-    def compile_ir(engine, llvm_ir):
-        """
-        Compile the LLVM IR string with the given engine.
-        The compiled module object is returned.
-        """
-        # Create a LLVM module object from the IR
-        mod = llvm.parse_assembly(llvm_ir)
-        mod.verify()
-        # Now add the module and make sure it is ready for execution
-        engine.add_module(mod)
-        engine.finalize_object()
-        engine.run_static_constructors()
-        return mod
 
     def run(self, llvm_ir, timer):
-        llvm.initialize()
-        llvm.initialize_native_target()
-        llvm.initialize_native_asmprinter()
-        engine = self.create_execution_engine()
-        mod = self.compile_ir(engine, llvm_ir)
 
-        # Look up the function pointer (a Python int)
-        func_ptr = engine.get_function_address("main")
+        # create llvm file
+        with open("llvm_file.ll", "w") as text_file:
+            text_file.write(llvm_ir)
+        # compile it using clang
+        subprocess.run(["clang-7", "-o", "res", "llvm_file.ll", "-lm"])
+        # time program
+        times = []
+        for _ in range(NB_RUNS):
+            usage_start = resource.getrusage(resource.RUSAGE_CHILDREN)
+            subprocess.run(["./res"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            usage_end = resource.getrusage(resource.RUSAGE_CHILDREN)
+            times.append(usage_end.ru_utime - usage_start.ru_utime)
+        return min(times)
 
-        # Run the function via ctypes
-        cfunc = CFUNCTYPE(c_int32)(func_ptr)
-        if timer == "timer_v1":
-            timer = self.time_program(cfunc)
-        elif timer == "timer_v2":
-            timer = self.time_programV2(cfunc)
-
-        return timer
-
-    @staticmethod
-    def time_program(func):
-        """
-        min running time of a function using perf_counter
-        """
-        # select only one cpu
-        pid = os.getpid()
-        os.sched_setaffinity(pid, {0})
-
-        # run the program ones without timing it
-        func()
-
-        min_time = 9999
-        nb_runs = 3
-        for _ in range(nb_runs):
-            start = time.perf_counter()
-            func()
-            end = time.perf_counter()
-            ex_time = end - start
-            # print(f"ex time: {ex_time}")
-            if ex_time < min_time:
-                min_time = ex_time
-
-        os.sched_setaffinity(pid, {0, 1, 2, 3})
-        # print("done in " + str(time.perf_counter() - start) + " s")
-        # print("main(...) =", res)
-
-        return min_time
-
-    @staticmethod
-    def time_programV2(func):
-        """
-        min running time of a function using perf_counter
-        """
-        # select only one cpu
-        pid = os.getpid()
-        os.sched_setaffinity(pid, {0})
-
-        # run the program ones without timing it
-        func()
-
-        min_time = min(timeit.repeat(func, number=1, repeat=1))
-
-        os.sched_setaffinity(pid, {0, 1, 2, 3})
-        # print("done in " + str(time.perf_counter() - start) + " s")
-        # print("main(...) =", res)
-
-        return min_time
+    
