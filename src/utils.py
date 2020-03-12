@@ -1,5 +1,4 @@
 import networkx as nx
-import matplotlib.pyplot as plt
 import itertools as it
 import re
 
@@ -108,3 +107,13 @@ def list_to_string(l):
     for elem in l:
         s += elem
     return s
+
+def memory_profile(memory):
+    for name, size in sorted(((name, sys.getsizeof(value)) for name, value in globals().items()),
+                            key= lambda x: -x[1])[:10]:
+                if name in memory:
+                    if size > memory[name]:
+                        if name != "MEMORY":
+                            print(f"var size increased ({name})")
+                else:
+                    memory[name] = size

@@ -1,54 +1,85 @@
-import gym
-import random
-import numpy as np
-import time
 import collections
-import os
 import copy
-import timeit
+import os
+import random
 import re
-
-from gym import spaces
-from utils import *
+import time
+import timeit
 from ctypes import CFUNCTYPE, c_int32
-# from sklearn.preprocessing import OneHotEncoder
 
-import llvmlite.ir as ll
+import gym
 import llvmlite.binding as llvm
+import llvmlite.ir as ll
+import numpy as np
+from gym import spaces
+import sys
 
+from .utils import * 
+
+def sizeof_fmt(num, suffix='B'):
+    ''' by Fred Cirera,  https://stackoverflow.com/a/1094933/1870254, modified'''
+    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+        if abs(num) < 1024.0:
+            return "%3.1f %s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return num
+
+
+MEMORY = {}
 
 class LLVMEnv(gym.Env):
 
-    def __init__(self, file_path):
+    def __init__(self, file_path, timer, onehot=False, reward_scaler=1e6, op_age=min):
         super(LLVMEnv, self).__init__()
 
         self.file_path = file_path
 
+        self.reward_scaler = reward_scaler
+        self.timer = timer
+        self.extremum = op_age
+        self.onehot = onehot
+        self.MAX_AGE = 10
+
         self.instr_to_opcode = {
-            "alloca": 0,
-            "store": 1,
-            "load": 2,
-            "add": 3,
-            "sub": 4,
-            "mul": 5,
-            "sdiv": 6,
-            "other": 7
+            "alloca": 1,
+            "store": 2,
+            "load": 3,
+            "fadd": 4,
+            "fsub": 5,
+            "fmul": 6,
+            "fdiv": 7,
+            "other": 8
         }
 
         # 2 actions: choose instruction or not.
         self.action_space = spaces.Discrete(2)
-        # self.observation_space = spaces.Discrete(len(self.instr_to_opcode))  # 1 state per instruction
-        self.observation_space = spaces.Box(low=np.array([-1, -1, 0, 0]), high=np.array([7, 7, 7, 10]), dtype=int)
+        if not self.onehot:
+            self.observation_space = spaces.Box(low=np.array([0, 0, 0, 0]), 
+                                                high=np.array([8, 8, 8, self.MAX_AGE]), 
+                                                dtype=int)
+        else:
+            low = np.append(np.array([0]*3*(len(self.instr_to_opcode)+1)), 
+                            np.array([0]*(self.MAX_AGE + 1)))
+            high = np.append(np.array([1]*3*(len(self.instr_to_opcode)+1)), 
+                             np.array([1]*(self.MAX_AGE + 1)))
+
+            self.observation_space = spaces.Box(low=low, high=high, dtype=int)
+
 
         self.selected_instruction = None  # current selected instruction
         self.schedulable_instructions = None
 
         # last 2 scheduled instructions's opcode
-        self.history = collections.deque([-1, -1], 2)
+        self.history = collections.deque([0, 0], 2)
 
         self.llvm = LLVMController(self.file_path)
 
+        
+
     def step(self, action):
+
+        # memory_profile(MEMORY)
+
 
         # if the agent has chosen to schedule the instruction
         if action == 0:
@@ -65,8 +96,10 @@ class LLVMEnv(gym.Env):
         done = len(self.schedulable_instructions) == 0
 
         if done:
+        
             next_state = None
-            reward = -self.llvm.run(self.llvm.string_file) * 1000000
+            # * 1000000
+            reward = -self.llvm.run(self.llvm.string_file, self.timer) * self.reward_scaler
         else:
             reward = 0
             next_instruction_opcode = self.select_next_instruction(self.schedulable_instructions)
@@ -76,11 +109,37 @@ class LLVMEnv(gym.Env):
 
     def update_state(self, next_instruction_opcode):
         state = list()
+        not_encoded = list()
         state.extend(self.history)
+        not_encoded.extend((self.history))
         state.append(next_instruction_opcode)
+        not_encoded.append(next_instruction_opcode)
+        if self.onehot:
+            state = self.oneHotInstructions(state)
+
         operands_ages = self.compute_operands_ages()
-        state.append(operands_ages)
+        not_encoded.append(operands_ages)
+        if self.onehot:
+            operands_ages = self.oneHotAge(operands_ages)
+            state.extend(operands_ages)
+        else:
+            state.append(operands_ages)
+        # print("not encoded")
+        # print(not_encoded)
         return np.array(state)
+
+    def oneHotInstructions(self, state):
+        encoded_states = np.array([])
+        for elem in state:
+            encoded = np.zeros(len(self.instr_to_opcode) + 1)
+            encoded[elem] = 1 
+            encoded_states = np.append(encoded_states, encoded)
+        return list(encoded_states)
+    
+    def oneHotAge(self, age):
+        encoded = np.zeros(self.MAX_AGE + 1)
+        encoded[age] = 1
+        return list(encoded)
 
     def select_next_instruction(self, instructions):
         """
@@ -103,21 +162,25 @@ class LLVMEnv(gym.Env):
 
     def compute_operands_ages(self):
         """
-        max age of the current instruction's operands.
+        max/min (depending on extremum) age of the current instruction's operands.
         The age of an operand is defined as the number of instructions between
         itself and the current instruction. The max age is 10
         """
-        max_age = 99999
+        ages = []
         for op in self.selected_instruction.operands:
             if op not in self.llvm.scheduled_instructions:
-                operands_age = 0
+                op_age= 0
             else:
                 op_age = len(self.llvm.scheduled_instructions) - \
                          self.llvm.scheduled_instructions.index(op)  # current op age
-                if op_age > max_age:
-                    max_age = op_age
+            ages.append(op_age)
 
-        return min(max_age, 10)
+        if len(ages) == 0:
+            res = 0
+        else:
+            res = self.extremum(ages)
+
+        return min(res, self.MAX_AGE) # res bounded between 0 and 10
 
     def render(self):
         print("---ENV---")
@@ -133,7 +196,7 @@ class LLVMEnv(gym.Env):
         self.llvm.reset()
         self.selected_instruction = None
         self.schedulable_instructions = None
-        self.history = collections.deque([-1, -1], 2)
+        self.history = collections.deque([0, 0], 2)
         self.schedulable_instructions = self.llvm.find_schedulable_instructions()
         next_instruction_opcode = self.select_next_instruction(self.schedulable_instructions)
         next_state = self.update_state(next_instruction_opcode)
@@ -255,9 +318,6 @@ class LLVMController:
             return False
         return True
 
-    def is_block_instruction(self, operand):
-        return operand in self.blocks[self.curr_block]
-
     def terminate_block(self):
         # add the terminator instruction
         self.scheduled_instructions.append(self.block_instructions[-1])
@@ -330,7 +390,7 @@ class LLVMController:
         engine.run_static_constructors()
         return mod
 
-    def run(self, llvm_ir):
+    def run(self, llvm_ir, timer):
         llvm.initialize()
         llvm.initialize_native_target()
         llvm.initialize_native_asmprinter()
@@ -342,7 +402,11 @@ class LLVMController:
 
         # Run the function via ctypes
         cfunc = CFUNCTYPE(c_int32)(func_ptr)
-        timer = self.time_programV2(cfunc)
+        if timer == "timer_v1":
+            timer = self.time_program(cfunc)
+        elif timer == "timer_v2":
+            timer = self.time_programV2(cfunc)
+
         return timer
 
     @staticmethod
@@ -355,15 +419,16 @@ class LLVMController:
         os.sched_setaffinity(pid, {0})
 
         # run the program ones without timing it
-        print(func())
+        func()
 
         min_time = 9999
-        nb_runs = 100000
+        nb_runs = 3
         for _ in range(nb_runs):
             start = time.perf_counter()
             func()
             end = time.perf_counter()
             ex_time = end - start
+            # print(f"ex time: {ex_time}")
             if ex_time < min_time:
                 min_time = ex_time
 

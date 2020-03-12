@@ -1,83 +1,105 @@
-from stable_baselines.common.env_checker import check_env
-from stable_baselines.common.vec_env import DummyVecEnv, VecNormalize
-
-from env import *
+import argparse
 import os
 import sys
+
 import gym
 import numpy as np
-import matplotlib.pyplot as plt
-
-# from stable_baselines.ddpg.policies import LnMlpPolicy
+# from stable_baselines.results_plotter import load_results, ts2xy
+from stable_baselines import DQN
 from stable_baselines.bench import Monitor
-from stable_baselines.results_plotter import load_results, ts2xy
-from stable_baselines import DQN, ACER
-# from stable_baselines.ddpg import AdaptiveParamNoiseSpec
-from stable_baselines import results_plotter
+from stable_baselines.common.env_checker import check_env
+from stable_baselines.deepq.policies import FeedForwardPolicy, MlpPolicy
+from stable_baselines.common.vec_env import DummyVecEnv
 
-# controller = LLVMController("c_examples/dummy2.ll")
-# print(controller.llvm_file)
+from .env import LLVMEnv
 
-filepath = sys.argv[1]
-
-best_mean_reward, n_steps = -np.inf, 0
+import linecache
+import os
+import tracemalloc
 
 
-# def callback(_locals, _globals):
-#     """
-#     Callback called at each step (for DQN an others) or after n steps (see ACER or PPO2)
-#     :param _locals: (dict)
-#     :param _globals: (dict)
-#     """
-#     global n_steps, best_mean_reward
-#     # Print stats every 1000 calls
-#     if (n_steps + 1) % 1000 == 0:
-#         # Evaluate policy training performance
-#         x, y = ts2xy(load_results(log_dir), 'timesteps')
-#         if len(x) > 0:
-#             mean_reward = np.mean(y[-100:])
-#             print(x[-1], 'timesteps')
-#             print(
-#                 "Best mean reward: {:.2f} - Last mean reward per episode: {:.2f}".format(best_mean_reward, mean_reward))
-#
-#             # New best model, you could save the agent here
-#             if mean_reward > best_mean_reward:
-#                 best_mean_reward = mean_reward
-#                 # Example for saving best model
-#                 print("Saving new best model")
-#                 _locals['self'].save(log_dir + 'best_model.pkl')
-#     n_steps += 1
-#     return True
+class CustomDQNPolicy(FeedForwardPolicy):
+    def __init__(self, *args, **kwargs):
+        super(CustomDQNPolicy, self).__init__(*args, **kwargs,
+                                           layers=[128],
+                                           layer_norm=False,
+                                           feature_extraction="mlp")
+
+def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--filepath', help='program filepath to optimize', required=True)
+    parser.add_argument('--algo', help='The RL algorithm', default="DQN")
+    parser.add_argument('--steps', help='Number of steps for training', default=1e5, type=float)
+    parser.add_argument('--timer', help='timer function to be used by the env', 
+                        default="timer_v1")
+    parser.add_argument('--r-scaler', help='constant to rescale de reward', default=10, type=int)
+    parser.add_argument('--op-age', help='extremum function to be used for the age of the operands',
+                        default=min)
+    parser.add_argument('--onehot', help='if true,  onehot encode the operand in the state', 
+                        action='store_true', default=False)
+
+    args = parser.parse_args()
+
+    # Create and wrap the environment
+    env = LLVMEnv(
+                    args.filepath, 
+                    timer=args.timer, 
+                    onehot=args.onehot, 
+                    reward_scaler=args.r_scaler,
+                    op_age=args.op_age
+                )
+
+    print("env created")
 
 
-# Create log dir
-log_dir = "tmp/"
-plot_dir = "plot/"
-os.makedirs(log_dir, exist_ok=True)
-os.makedirs(plot_dir, exist_ok=True)
+    check_env(env, warn=True)
+    env = DummyVecEnv([lambda: env])
+    filename = args.filepath.split("/")[-1].split(".")[0]
+    exp_name = f"{filename}_{args.algo}_oh_{str(args.onehot)}"
 
-# Create and wrap the environment
-env = LLVMEnv(filepath)
-check_env(env, warn=True)
-env = Monitor(env, log_dir)
-env = DummyVecEnv([lambda: env])
+    if args.algo == "DQN":
+        model = DQN(CustomDQNPolicy, env, gamma=0.999, prioritized_replay=True, verbose=1, tensorboard_log="logs/")
 
-# peut etre utile
-# env = VecNormalize(env, norm_obs=True, norm_reward=False)
+    print("model created")
 
-
+    # Train the agent
+    time_steps = int(args.steps)
+    print(time_steps)
+    model.learn(total_timesteps=int(time_steps), tb_log_name=exp_name)
 
 
-model = DQN('MlpPolicy', env, prioritized_replay=True, verbose=1, tensorboard_log="./logs/")
-# Train the agent
-time_steps = 1e5
-model.learn(total_timesteps=int(time_steps), tb_log_name="DQN")
+def display_top(snapshot, key_type='lineno', limit=10):
+    snapshot = snapshot.filter_traces((
+        tracemalloc.Filter(False, "<frozen importlib._bootstrap>"),
+        tracemalloc.Filter(False, "<unknown>"),
+    ))
+    top_stats = snapshot.statistics(key_type)
 
-# model = ACER('MlpPolicy', env, verbose=1, tensorboard_log="./logs/")
-# # Train the agent
-# time_steps = 1e5
-# model.learn(total_timesteps=int(time_steps), tb_log_name="ACER")
+    print("Top %s lines" % limit)
+    for index, stat in enumerate(top_stats[:limit], 1):
+        frame = stat.traceback[0]
+        print("#%s: %s:%s: %.1f KiB"
+              % (index, frame.filename, frame.lineno, stat.size / 1024))
+        line = linecache.getline(frame.filename, frame.lineno).strip()
+        if line:
+            print('    %s' % line)
 
-# results_plotter.plot_results([log_dir], time_steps, results_plotter.X_TIMESTEPS, "DQN LLVMEnv")
-# plt.savefig(plot_dir + "dqn.png")
+    other = top_stats[limit:]
+    if other:
+        size = sum(stat.size for stat in other)
+        print("%s other: %.1f KiB" % (len(other), size / 1024))
+    total = sum(stat.size for stat in top_stats)
+    print("Total allocated size: %.1f KiB" % (total / 1024))
 
+tracemalloc.start()
+
+# ... run your application ...
+
+snapshot = tracemalloc.take_snapshot()
+display_top(snapshot)
+if __name__ == "__main__":
+    # tracemalloc.start()
+    main()
+    # snapshot = tracemalloc.take_snapshot()
+    # display_top(snapshot)
