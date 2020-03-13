@@ -47,6 +47,7 @@ def main():
                         default=min)
     parser.add_argument('--onehot', help='if true,  onehot encode the operand in the state', 
                         action='store_true', default=False)
+    parser.add_argument('--nolog', action='store_true', default=True)
 
     args = parser.parse_args()
 
@@ -68,11 +69,16 @@ def main():
     filename = args.filepath.split("/")[-1].split(".")[0]
     exp_name = f"{filename}_{args.algo}_oh_{str(args.onehot)}"
 
+    log_file = 'logs/'
+    if args.nolog:
+        log_file = None
+    
+
     if args.algo == "dqn":
-        model = DQN(CustomDQNPolicy, env, gamma=0.999, prioritized_replay=True, verbose=1, tensorboard_log="logs/", seed=42)
+        model = DQN(CustomDQNPolicy, env, gamma=0.999, prioritized_replay=True, verbose=1, tensorboard_log=log_file, seed=42)
 
     elif args.algo == "ppo":
-        model = PPO2(CustomPolicy, env, gamma=0.999, n_steps=150, noptepochs=5, tensorboard_log="logs/", seed=42)
+        model = PPO2(CustomPolicy, env, gamma=0.999, n_steps=150, noptepochs=5, tensorboard_log=log_file, seed=42)
 
     print("model created")
 

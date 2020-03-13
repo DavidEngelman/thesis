@@ -1,14 +1,14 @@
 import subprocess, resource, os
 import numpy as np
 
-subprocess.run(["clang-7", "-o", "res", "llvm_file.ll", "-lm"])
+subprocess.run(["clang-7", "-O0", "-o", "res", "llvm_file.ll", "-lm"])
 
 pid = os.getpid()
 os.sched_setaffinity(pid, {0})
 
 for i in range(10):
     times = []
-    for i in range(3):
+    for i in range(10):
         usage_start = resource.getrusage(resource.RUSAGE_CHILDREN)
         subprocess.run(["./res"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         usage_end = resource.getrusage(resource.RUSAGE_CHILDREN)

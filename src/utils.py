@@ -29,7 +29,9 @@ def rename_with_prefix(items, _from, to, to_ignore, names):
     return res
 
 
-def rename_variables(f_string, f_list, start, end):
+START = 0
+def rename_variables(f_string, f_list, f_string_original, start, end, first_instr, last_instr):
+    global START
     names = []
     to_ignore = []
     for line in f_list[start:end + 1]:
@@ -43,23 +45,33 @@ def rename_variables(f_string, f_list, start, end):
     names.sort()
     i = 0
 
-    string_start, string_end = f_string.find(f_list[start]), f_string.find(f_list[end])
-    to_replace = f_string[string_start:string_end + 1]
-    for line in f_list[start:end+1]:
+    string_start = f_string.find(first_instr, START)
+    START = string_start
+    string_end = f_string.find(last_instr, string_start) + len(last_instr) - 1
+
+
+    new_string = list_to_string(f_list[start:end + 1])
+
+
+    for line in f_list[start:end + 1]:
         if len(line.strip()) != 0 and line.strip()[0] == "%":
             real_instr_num = line.strip().split(" ")[0][1:]
             if real_instr_num in to_ignore:
                 continue
 
-            to_replace = to_replace.replace("%" + str(real_instr_num) + " ", "@&@'" + str(names[i]) + " ")
-            to_replace = to_replace.replace("%" + str(real_instr_num) + ",", "@&@'" + str(names[i]) + ",")
-            to_replace = to_replace.replace("%" + str(real_instr_num) + "\n", "@&@'" + str(names[i]) + "\n")
+            new_string = new_string.replace("%" + str(real_instr_num) + " ", "@&@'" + str(names[i]) + " ")
+            new_string = new_string.replace("%" + str(real_instr_num) + ",", "@&@'" + str(names[i]) + ",")
+            new_string = new_string.replace("%" + str(real_instr_num) + "\n", "@&@'" + str(names[i]) + "\n")
+            new_string = new_string.replace("%" + str(real_instr_num) + ")", "@&@'" + str(names[i]) + ")")
 
             i += 1
 
-    to_replace = to_replace.replace("@&@'", '%')
+    new_string = new_string.replace("@&@'", '%')
 
-    f_string.replace(f_string[string_start:string_end + 1], to_replace)
+    print(new_string)
+
+
+    f_string = f_string.replace(f_string[string_start:string_end], new_string)
 
     return f_string
 
@@ -108,12 +120,3 @@ def list_to_string(l):
         s += elem
     return s
 
-def memory_profile(memory):
-    for name, size in sorted(((name, sys.getsizeof(value)) for name, value in globals().items()),
-                            key= lambda x: -x[1])[:10]:
-                if name in memory:
-                    if size > memory[name]:
-                        if name != "MEMORY":
-                            print(f"var size increased ({name})")
-                else:
-                    memory[name] = size

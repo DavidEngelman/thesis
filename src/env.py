@@ -87,11 +87,11 @@ class LLVMEnv(gym.Env):
         self.nb_shedulables.append(len(self.schedulable_instructions))
         
         # if one choice for the next instruction to schedule
-        if len(self.schedulable_instructions) == 1:
-            self.add_instruction()
+        # if len(self.schedulable_instructions) == 1:
+        #     self.add_instruction()
 
         # if the agent has chosen to schedule the instruction
-        elif action == 0:
+        if action == 0:
             self.add_instruction()
 
         done = len(self.schedulable_instructions) == 0
@@ -100,7 +100,7 @@ class LLVMEnv(gym.Env):
         
             next_state = None
             # * 1000000
-            reward = -self.llvm.run(self.llvm.string_file, self.timer) * self.reward_scaler
+            reward = -self.llvm.run(self.timer) * self.reward_scaler
             print(f"[episode done] reward: {reward} -- avg. nb of  shedul. instr.: {np.mean(self.nb_shedulables)}")
         else:
             reward = 0
@@ -263,14 +263,23 @@ class LLVMController:
 
     def create_all_graphs(self):
         """create de instructions dependency and memory dependency graphs for all blocks"""
-        instr_graphs = []
-        memory_graphs = []
+
+        print("[env]: creating all memory and instruction graphs... ")
+
+        all_instr_graphs = []
+        all_memory_graphs = []
         for function in self.functions:
+            function_instr_graph = []
+            function_memory_graph = []
             for block in function:
                 instr_graph, memory_graph = create_dependency_graphs(block)
-                instr_graphs.append(instr_graph)
-                memory_graphs.append(memory_graph)
-        return instr_graphs, memory_graphs
+                function_instr_graph.append(instr_graph)
+                function_memory_graph.append(memory_graph)
+
+            all_instr_graphs.append(function_instr_graph)
+            all_memory_graphs.append(function_memory_graph)
+
+        return all_instr_graphs, all_memory_graphs
 
     def get_block_instructions(self):
         return self.functions[self.curr_function][self.curr_block]
@@ -278,8 +287,8 @@ class LLVMController:
     def init_new_block(self):
         self.scheduled_instructions = []
         self.block_instructions = self.get_block_instructions()
-        self.curr_instr_graph = self.instr_graphs[self.curr_block].copy()
-        self.curr_memory_graph = self.memory_graphs[self.curr_block].copy()
+        self.curr_instr_graph = self.instr_graphs[self.curr_function][self.curr_block].copy()
+        self.curr_memory_graph = self.memory_graphs[self.curr_function][self.curr_block].copy()
 
     def update_counters(self):
         self.curr_block += 1
@@ -290,9 +299,14 @@ class LLVMController:
             self.curr_function += 1
             self.reordered_blocks = []
 
+    def terminate_block(self):
+        # add the terminator instruction
+        self.scheduled_instructions.append(self.block_instructions[-1])
+        self.reordered_blocks.append(self.scheduled_instructions)
+
     def find_schedulable_instructions(self):
         # check if we need to start to schedule a new block
-        if len(self.scheduled_instructions) == (len(self.block_instructions) - 1):
+        while len(self.scheduled_instructions) == (len(self.block_instructions) - 1):
             self.terminate_block()
             self.update_counters()
             if self.curr_function < len(self.functions):
@@ -301,13 +315,6 @@ class LLVMController:
                 return []
 
         self.schedulable_instructions = []
-
-        if len(self.block_instructions) == 1:
-            self.update_counters()
-            if self.curr_function < len(self.functions):
-                self.init_new_block()
-            self.reordered_blocks.append(self.scheduled_instructions)
-            return [self.block_instructions[0]]
 
         for instruction in list(self.curr_instr_graph.nodes())[:-1]:
             if self.is_schedulable(instruction):
@@ -322,34 +329,54 @@ class LLVMController:
             return False
         return True
 
-    def terminate_block(self):
-        # add the terminator instruction
-        self.scheduled_instructions.append(self.block_instructions[-1])
-        self.reordered_blocks.append(self.scheduled_instructions)
 
     def write_reordered_function(self):
+        
+        print("in reordered_function")
 
-        function_first_instruction = reformat_string(str(self.reordered_blocks[0][0]))
-        function_last_instruction = reformat_string(str(self.reordered_blocks[-1][-1]))
 
-        function_start_index = self.curr_llvm_file.index(function_first_instruction)
+        # current function first block first instruction
+        function_first_instruction = reformat_string(str(self.functions[self.curr_function][0][0]))
+        # current function last block last instruction
+        function_last_instruction = reformat_string(str(self.functions[self.curr_function][-1][-1]))
+
+        function_start_index = self.llvm_file.index(function_first_instruction, self.function_start)
+        function_end_index = self.llvm_file.index(function_last_instruction, function_start_index)
         self.function_start = function_start_index
-        function_end_index = self.curr_llvm_file.index(function_last_instruction)
 
-        for i, b in enumerate(self.reordered_blocks):
+
+        print(function_start_index)
+        print(function_end_index)
+
+
+        start_bound = function_start_index
+        end_bound = function_end_index + 1
+
+        for i, b in enumerate(self.functions[self.curr_function]):
             block_first_instruction = reformat_string(str(b[0]))
             block_last_instruction = reformat_string(str(b[-1]))
 
-            start = self.curr_llvm_file.index(block_first_instruction)
-            end = self.curr_llvm_file.index(block_last_instruction, start)
+            start = self.llvm_file.index(block_first_instruction, start_bound, end_bound)
+            end = self.llvm_file.index(block_last_instruction, start, end_bound)
+
+            start_bound = end
+
+            # print(block_first_instruction, end = "")
+            # print(block_last_instruction, end = "")
+
+            # print(start + 1, end + 1)
 
             to_replace = [reformat_string(str(inst)) for inst in self.reordered_blocks[i]]
-            if len(b) != 1:
-                self.curr_llvm_file[start: end + 1] = to_replace
-            else:
-                self.curr_llvm_file[start: end] = to_replace
+            self.curr_llvm_file[start: end + 1] = to_replace
 
-        self.string_file = rename_variables(self.string_file,self.curr_llvm_file, function_start_index, function_end_index)
+        
+        self.string_file = rename_variables(self.string_file, self.curr_llvm_file, list_to_string(self.llvm_file) , function_start_index, function_end_index, function_first_instruction, function_last_instruction)
+
+        # with open("before_reorder.ll", "w") as text_file:
+        #     text_file.write(list_to_string(self.curr_llvm_file))
+
+        # with open("after_reorder.ll", "w") as text_file:
+        #     text_file.write(self.string_file)
 
     def reset(self):
 
@@ -365,20 +392,20 @@ class LLVMController:
         self.function_start = 0
 
 
-    def run(self, llvm_ir, timer):
-
+    def run(self, timer):
+        print("[env]: running code for evalution...")
         # create llvm file
         with open("llvm_file.ll", "w") as text_file:
-            text_file.write(llvm_ir)
+            text_file.write(self.string_file)
         # compile it using clang
-        subprocess.run(["clang-7", "-o", "res", "llvm_file.ll", "-lm"])
+        subprocess.run(["clang-7", "-O0", "-o", "res", "llvm_file.ll", "-lm"])
         # time program
         times = []
         for _ in range(NB_RUNS):
             usage_start = resource.getrusage(resource.RUSAGE_CHILDREN)
-            subprocess.run(["./res"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["./res"])
             usage_end = resource.getrusage(resource.RUSAGE_CHILDREN)
             times.append(usage_end.ru_utime - usage_start.ru_utime)
-        return min(times)
+        return np.mean(times)
 
     
