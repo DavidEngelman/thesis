@@ -2,7 +2,7 @@ import networkx as nx
 import itertools as it
 import re
 
-MEMORY_INSTR = ["load", "store"]
+MEMORY_INSTR = ["load", "store", "fptoui"]
 
 
 def reformat_string(s):
@@ -29,51 +29,8 @@ def rename_with_prefix(items, _from, to, to_ignore, names):
     return res
 
 
-START = 0
-def rename_variables(f_string, f_list, f_string_original, start, end, first_instr, last_instr):
-    global START
-    names = []
-    to_ignore = []
-    for line in f_list[start:end + 1]:
-        if len(line.strip()) != 0 and line.strip()[0] == "%":
-            var_name = line.strip().split(" ")[0][1:]
-            try:
-                names.append(int(var_name))
-            except ValueError:
-                to_ignore.append(var_name)
-
-    names.sort()
-    i = 0
-
-    string_start = f_string.find(first_instr, START)
-    START = string_start
-    string_end = f_string.find(last_instr, string_start) + len(last_instr) - 1
 
 
-    new_string = list_to_string(f_list[start:end + 1])
-
-
-    for line in f_list[start:end + 1]:
-        if len(line.strip()) != 0 and line.strip()[0] == "%":
-            real_instr_num = line.strip().split(" ")[0][1:]
-            if real_instr_num in to_ignore:
-                continue
-
-            new_string = new_string.replace("%" + str(real_instr_num) + " ", "@&@'" + str(names[i]) + " ")
-            new_string = new_string.replace("%" + str(real_instr_num) + ",", "@&@'" + str(names[i]) + ",")
-            new_string = new_string.replace("%" + str(real_instr_num) + "\n", "@&@'" + str(names[i]) + "\n")
-            new_string = new_string.replace("%" + str(real_instr_num) + ")", "@&@'" + str(names[i]) + ")")
-
-            i += 1
-
-    new_string = new_string.replace("@&@'", '%')
-
-    print(new_string)
-
-
-    f_string = f_string.replace(f_string[string_start:string_end], new_string)
-
-    return f_string
 
 def create_dependency_graphs(block):
     """An instruction depend on another one if it contains it in its operand"""

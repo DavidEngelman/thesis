@@ -1,7 +1,7 @@
 import subprocess, resource, os
 import numpy as np
 
-subprocess.run(["clang-7", "-O0", "-o", "res", "llvm_file.ll", "-lm"])
+subprocess.run(["clang-7", "-O0", "-o", "res", "../c_examples/factorial.ll", "-lm"])
 
 pid = os.getpid()
 os.sched_setaffinity(pid, {0})

@@ -18,10 +18,9 @@ from gym import spaces
 
 from .utils import * 
 
-NB_RUNS = 10
+NB_RUNS = 3
 
 
-MEMORY = {}
 
 class LLVMEnv(gym.Env):
 
@@ -46,6 +45,21 @@ class LLVMEnv(gym.Env):
             "fdiv": 7,
             "other": 8
         }
+
+        # self.instr_to_opcode = {
+        #     "alloca": 1,
+        #     "store": 2,
+        #     "load": 3,
+        #     "add": 4,
+        #     "sub": 5,
+        #     "mul": 6,
+        #     "div": 7,
+        #     "other": 8
+        # }
+
+        self.max_step = 10000
+        self.curr_step = 0
+
 
         # 2 actions: choose instruction or not.
         self.action_space = spaces.Discrete(2)
@@ -83,12 +97,15 @@ class LLVMEnv(gym.Env):
 
     def step(self, action):
 
-        # memory_profile(MEMORY)
+        self.curr_step += 1
+        if self.curr_step > self.max_step:
+            next_state = None
+            reward = -10
+            print(f"[episode done] reward: {reward} -- avg. nb of  shedul. instr.: {np.mean(self.nb_shedulables)}")
+
+
         self.nb_shedulables.append(len(self.schedulable_instructions))
         
-        # if one choice for the next instruction to schedule
-        # if len(self.schedulable_instructions) == 1:
-        #     self.add_instruction()
 
         # if the agent has chosen to schedule the instruction
         if action == 0:
@@ -97,15 +114,15 @@ class LLVMEnv(gym.Env):
         done = len(self.schedulable_instructions) == 0
 
         if done:
-        
             next_state = None
             # * 1000000
-            reward = -self.llvm.run(self.timer) * self.reward_scaler
+            reward =  - (self.llvm.run(self.timer) * self.reward_scaler)
             print(f"[episode done] reward: {reward} -- avg. nb of  shedul. instr.: {np.mean(self.nb_shedulables)}")
         else:
             reward = 0
             next_instruction_opcode = self.select_next_instruction(self.schedulable_instructions)
             next_state = self.update_state(next_instruction_opcode)
+        
 
         return next_state, reward, done, {}
 
@@ -195,6 +212,7 @@ class LLVMEnv(gym.Env):
         print('------')
 
     def reset(self):
+        self.curr_step = 0
         self.llvm.reset()
         self.selected_instruction = None
         self.schedulable_instructions = None
@@ -214,6 +232,8 @@ class LLVMController:
             data = file.read()
         with open(file_path, 'r') as file:
             self.llvm_file = file.readlines()
+        
+        self.original_file = list_to_string(self.llvm_file)
 
         self.mod = llvm.parse_assembly(data)  # module from the inpute file
 
@@ -235,6 +255,8 @@ class LLVMController:
         self.curr_memory_graph = None
 
         self.function_start = 0
+        self.index_file_start = 0
+
 
         # def get_blocks(self):
 
@@ -330,10 +352,7 @@ class LLVMController:
         return True
 
 
-    def write_reordered_function(self):
-        
-        print("in reordered_function")
-
+    def write_reordered_function(self): 
 
         # current function first block first instruction
         function_first_instruction = reformat_string(str(self.functions[self.curr_function][0][0]))
@@ -342,12 +361,7 @@ class LLVMController:
 
         function_start_index = self.llvm_file.index(function_first_instruction, self.function_start)
         function_end_index = self.llvm_file.index(function_last_instruction, function_start_index)
-        self.function_start = function_start_index
-
-
-        print(function_start_index)
-        print(function_end_index)
-
+        self.function_start = function_end_index
 
         start_bound = function_start_index
         end_bound = function_end_index + 1
@@ -369,27 +383,67 @@ class LLVMController:
             to_replace = [reformat_string(str(inst)) for inst in self.reordered_blocks[i]]
             self.curr_llvm_file[start: end + 1] = to_replace
 
-        
-        self.string_file = rename_variables(self.string_file, self.curr_llvm_file, list_to_string(self.llvm_file) , function_start_index, function_end_index, function_first_instruction, function_last_instruction)
+        with open("before_reorder.ll", "w") as text_file:
+            text_file.write(list_to_string(self.curr_llvm_file))
 
-        # with open("before_reorder.ll", "w") as text_file:
-        #     text_file.write(list_to_string(self.curr_llvm_file))
+        self.rename_variables(function_start_index, function_end_index, function_first_instruction, function_last_instruction)
 
-        # with open("after_reorder.ll", "w") as text_file:
-        #     text_file.write(self.string_file)
+        with open("after_reorder.ll", "w") as text_file:
+            text_file.write(self.string_file)
+
+    def rename_variables(self, start, end, first_instr, last_instr):
+        names = []
+        to_ignore = []
+        for line in self.curr_llvm_file[start:end + 1]:
+            if len(line.strip()) != 0 and line.strip()[0] == "%":
+                var_name = line.strip().split(" ")[0][1:]
+                try:
+                    names.append(int(var_name))
+                except ValueError:
+                    to_ignore.append(var_name)
+
+        names.sort()
+        i = 0
+        string_start = self.original_file.index(first_instr, self.index_file_start)
+        string_end = self.original_file.index(last_instr, string_start) + len(last_instr) - 1
+        # print(self.string_file[string_end : string_end + 150])
+        self.index_file_start = string_end
+
+        # print(string_start, string_end)
+
+        new_string = list_to_string(self.curr_llvm_file[start:end + 1])
+
+
+        for line in self.curr_llvm_file[start:end + 1]:
+            if len(line.strip()) != 0 and line.strip()[0] == "%":
+                real_instr_num = line.strip().split(" ")[0][1:]
+                if real_instr_num in to_ignore:
+                    continue
+
+                new_string = new_string.replace("%" + str(real_instr_num) + " ", "@&@'" + str(names[i]) + " ")
+                new_string = new_string.replace("%" + str(real_instr_num) + ",", "@&@'" + str(names[i]) + ",")
+                new_string = new_string.replace("%" + str(real_instr_num) + "\n", "@&@'" + str(names[i]) + "\n")
+                new_string = new_string.replace("%" + str(real_instr_num) + ")", "@&@'" + str(names[i]) + ")")
+
+                i += 1
+
+        new_string = new_string.replace("@&@'", '%')
+        self.string_file = self.string_file.replace(self.original_file[string_start:string_end], new_string.rstrip())
+
 
     def reset(self):
 
         self.curr_llvm_file = copy.deepcopy(self.llvm_file)
         self.string_file = list_to_string(self.curr_llvm_file)
+
         self.curr_block = 0
         self.curr_function = 0
-
         self.reordered_blocks = []
         self.schedulable_instructions = []
         self.init_new_block()
 
         self.function_start = 0
+        self.index_file_start = 0
 
 
     def run(self, timer):
@@ -403,7 +457,7 @@ class LLVMController:
         times = []
         for _ in range(NB_RUNS):
             usage_start = resource.getrusage(resource.RUSAGE_CHILDREN)
-            subprocess.run(["./res"])
+            subprocess.run(["./res"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             usage_end = resource.getrusage(resource.RUSAGE_CHILDREN)
             times.append(usage_end.ru_utime - usage_start.ru_utime)
         return np.mean(times)
