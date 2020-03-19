@@ -57,7 +57,7 @@ class LLVMEnv(gym.Env):
         #     "other": 8
         # }
 
-        self.max_step = 10000
+        self.max_step = 50000
         self.curr_step = 0
 
 
@@ -96,17 +96,17 @@ class LLVMEnv(gym.Env):
         
 
     def step(self, action):
-
+    
         self.curr_step += 1
         if self.curr_step > self.max_step:
+            done = True
             next_state = None
-            reward = -10
-            print(f"[episode done] reward: {reward} -- avg. nb of  shedul. instr.: {np.mean(self.nb_shedulables)}")
-
+            reward = 0
+            print(f"[episode done] reward: {reward} -- nb. steps: {self.curr_step} -- avg. nb of  shedul. instr.: {np.mean(self.nb_shedulables)}")
+            return next_state, reward, done, {}
 
         self.nb_shedulables.append(len(self.schedulable_instructions))
         
-
         # if the agent has chosen to schedule the instruction
         if action == 0:
             self.add_instruction()
@@ -115,16 +115,16 @@ class LLVMEnv(gym.Env):
 
         if done:
             next_state = None
-            # * 1000000
-            reward =  - (self.llvm.run(self.timer) * self.reward_scaler)
-            print(f"[episode done] reward: {reward} -- avg. nb of  shedul. instr.: {np.mean(self.nb_shedulables)}")
+            self.run_time = self.llvm.run(self.timer)
+            reward = 10 -  (self.run_time*10)
+            print(f"[episode done] reward: {reward} -- nb. steps: {self.curr_step} -- avg. shedul. instr.: {np.mean(self.nb_shedulables)} -- run time: {self.run_time} ")
         else:
             reward = 0
             next_instruction_opcode = self.select_next_instruction(self.schedulable_instructions)
             next_state = self.update_state(next_instruction_opcode)
         
 
-        return next_state, reward, done, {}
+        return next_state, reward, done, {"run_time": self.run_time}
 
     def update_state(self, next_instruction_opcode):
         state = list()
@@ -213,6 +213,7 @@ class LLVMEnv(gym.Env):
 
     def reset(self):
         self.curr_step = 0
+        self.run_time = None
         self.llvm.reset()
         self.selected_instruction = None
         self.schedulable_instructions = None
@@ -230,22 +231,19 @@ class LLVMController:
     def __init__(self, file_path):
         with open(file_path, 'r') as file:
             data = file.read()
-        with open(file_path, 'r') as file:
-            self.llvm_file = file.readlines()
-        
-        self.original_file = list_to_string(self.llvm_file)
+
 
         self.mod = llvm.parse_assembly(data)  # module from the inpute file
-
-        # self.blocks = self.get_blocks()
-        self.functions = self.get_functions()
+        self.functions, self.llvm_code = self.get_functions()
+        self.original_file = data
+    
         self.instr_graphs, self.memory_graphs = self.create_all_graphs()
 
         self.curr_function = 0
         self.curr_block = 0
 
         self.reordered_blocks = []  # blocks of a function with new order of instructions
-        self.curr_llvm_file = copy.deepcopy(self.llvm_file)
+        self.curr_llvm_code = copy.deepcopy(self.llvm_code)
 
         self.block_instructions = []
         self.scheduled_instructions = []
@@ -272,16 +270,19 @@ class LLVMController:
 
     def get_functions(self):
         functions = []
+        llvm_file = []
         for func in self.mod.functions:
             function_blocks = []
             for block in func.blocks:
                 block_instructions = []
                 for instruction in block.instructions:
                     block_instructions.append(instruction)
+                    llvm_file.append(str(instruction))
                 function_blocks.append(block_instructions)
             if len(function_blocks):
                 functions.append(function_blocks)
-        return functions
+        return functions, llvm_file
+
 
     def create_all_graphs(self):
         """create de instructions dependency and memory dependency graphs for all blocks"""
@@ -352,96 +353,86 @@ class LLVMController:
         return True
 
 
-    def write_reordered_function(self): 
-
-        # current function first block first instruction
-        function_first_instruction = reformat_string(str(self.functions[self.curr_function][0][0]))
-        # current function last block last instruction
-        function_last_instruction = reformat_string(str(self.functions[self.curr_function][-1][-1]))
-
-        function_start_index = self.llvm_file.index(function_first_instruction, self.function_start)
-        function_end_index = self.llvm_file.index(function_last_instruction, function_start_index)
-        self.function_start = function_end_index
-
-        start_bound = function_start_index
-        end_bound = function_end_index + 1
-
+    def write_reordered_function(self):
+        
+        replaced_block = []
         for i, b in enumerate(self.functions[self.curr_function]):
-            block_first_instruction = reformat_string(str(b[0]))
-            block_last_instruction = reformat_string(str(b[-1]))
-
-            start = self.llvm_file.index(block_first_instruction, start_bound, end_bound)
-            end = self.llvm_file.index(block_last_instruction, start, end_bound)
-
-            start_bound = end
-
-            # print(block_first_instruction, end = "")
-            # print(block_last_instruction, end = "")
-
-            # print(start + 1, end + 1)
+            block_first_instruction = (str(b[0]))
+            block_last_instruction = (str(b[-1]))
 
             to_replace = [reformat_string(str(inst)) for inst in self.reordered_blocks[i]]
-            self.curr_llvm_file[start: end + 1] = to_replace
+            replaced_block.extend(to_replace)
 
-        with open("before_reorder.ll", "w") as text_file:
-            text_file.write(list_to_string(self.curr_llvm_file))
+            string_start = self.original_file.index(block_first_instruction, self.index_file_start)
+            string_end = self.original_file.index(block_last_instruction, string_start) + len(block_last_instruction) - 1
+            self.index_file_start = string_end
 
-        self.rename_variables(function_start_index, function_end_index, function_first_instruction, function_last_instruction)
+            new_string = list_to_string(to_replace)
+            self.string_file = self.string_file.replace(
+                                                        self.original_file[string_start:string_end + 1], 
+                                                        new_string.rstrip()
+                                                        )
 
-        with open("after_reorder.ll", "w") as text_file:
-            text_file.write(self.string_file)
 
-    def rename_variables(self, start, end, first_instr, last_instr):
+        # current function first block first instruction
+        function_first_instruction = str(self.reordered_blocks[0][0])
+        # current function last block last instruction
+        function_last_instruction = str(self.reordered_blocks[-1][-1])
+
+        function_start_index = self.string_file.index(function_first_instruction, self.function_start)
+        function_end_index = self.string_file.index(function_last_instruction, function_start_index) + len(function_last_instruction) - 1
+        self.function_start = function_end_index
+
+        self.rename_variables(function_start_index, function_end_index, replaced_block)
+        
+
+
+    def rename_variables(self, start, end, replaced_block):
         names = []
         to_ignore = []
-        for line in self.curr_llvm_file[start:end + 1]:
+        
+        for line in replaced_block:
             if len(line.strip()) != 0 and line.strip()[0] == "%":
                 var_name = line.strip().split(" ")[0][1:]
                 try:
                     names.append(int(var_name))
                 except ValueError:
                     to_ignore.append(var_name)
-
-        names.sort()
+            names.sort()
         i = 0
-        string_start = self.original_file.index(first_instr, self.index_file_start)
-        string_end = self.original_file.index(last_instr, string_start) + len(last_instr) - 1
-        # print(self.string_file[string_end : string_end + 150])
-        self.index_file_start = string_end
+        
+        new_string = self.string_file[start:end + 1]
 
-        # print(string_start, string_end)
-
-        new_string = list_to_string(self.curr_llvm_file[start:end + 1])
-
-
-        for line in self.curr_llvm_file[start:end + 1]:
+        for line in replaced_block:
             if len(line.strip()) != 0 and line.strip()[0] == "%":
                 real_instr_num = line.strip().split(" ")[0][1:]
                 if real_instr_num in to_ignore:
+                    print(real_instr_num)
                     continue
-
-                new_string = new_string.replace("%" + str(real_instr_num) + " ", "@&@'" + str(names[i]) + " ")
-                new_string = new_string.replace("%" + str(real_instr_num) + ",", "@&@'" + str(names[i]) + ",")
-                new_string = new_string.replace("%" + str(real_instr_num) + "\n", "@&@'" + str(names[i]) + "\n")
-                new_string = new_string.replace("%" + str(real_instr_num) + ")", "@&@'" + str(names[i]) + ")")
-
+                
+                regex = rf"%{real_instr_num}\b"
+                new_string = re.sub(regex, f"§{names[i]}", new_string)
                 i += 1
 
-        new_string = new_string.replace("@&@'", '%')
-        self.string_file = self.string_file.replace(self.original_file[string_start:string_end], new_string.rstrip())
+        new_string = new_string.replace("§", '%')
+        
+
+        self.string_file = self.string_file.replace(
+                                                        self.string_file[start:end + 1], 
+                                                        new_string
+                                                        )
 
 
     def reset(self):
 
-        self.curr_llvm_file = copy.deepcopy(self.llvm_file)
-        self.string_file = list_to_string(self.curr_llvm_file)
+        self.curr_llvm_code = copy.deepcopy(self.llvm_code)
+        self.string_file = copy.deepcopy(self.original_file)
 
         self.curr_block = 0
         self.curr_function = 0
         self.reordered_blocks = []
         self.schedulable_instructions = []
         self.init_new_block()
-
         self.function_start = 0
         self.index_file_start = 0
 
@@ -449,17 +440,30 @@ class LLVMController:
     def run(self, timer):
         print("[env]: running code for evalution...")
         # create llvm file
+        print(self.string_file == self.original_file)
         with open("llvm_file.ll", "w") as text_file:
             text_file.write(self.string_file)
         # compile it using clang
-        subprocess.run(["clang-7", "-O0", "-o", "res", "llvm_file.ll", "-lm"])
+        subprocess.run(["clang-7", "-O2", "-march=native", "-mllvm", "-enable-misched=False",   "-o", "res", "llvm_file.ll", "-lm"])
         # time program
         times = []
+
+        # select only one cpu
+        pid = os.getpid()
+        os.sched_setaffinity(pid, {0})
+
         for _ in range(NB_RUNS):
             usage_start = resource.getrusage(resource.RUSAGE_CHILDREN)
+            # subprocess.run(["./res"])
             subprocess.run(["./res"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             usage_end = resource.getrusage(resource.RUSAGE_CHILDREN)
             times.append(usage_end.ru_utime - usage_start.ru_utime)
+        
+        os.sched_setaffinity(pid, {0, 1, 2, 3})
+
+        if not are_equals("reference", "rendered_scene"):
+            print("program output problem")
+            exit()
         return np.mean(times)
 
     

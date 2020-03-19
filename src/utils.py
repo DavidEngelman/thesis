@@ -1,8 +1,13 @@
 import networkx as nx
 import itertools as it
 import re
+import cv2
+import numpy as np
 
-MEMORY_INSTR = ["load", "store", "fptoui"]
+
+# MEMORY_INSTR = ["load", "store", "fptoui", "getelementptr", "fptrunc", "bitcast", "call"]
+MEMORY_INSTR = ["load", "store", "getelementptr", "bitcast", "phi",  "call"]
+# MEMORY_INSTR = ["load", "store", "fptoui",  "call"]
 
 
 def reformat_string(s):
@@ -41,9 +46,10 @@ def create_dependency_graphs(block):
         instr_g.add_node(i)
         if i.opcode in MEMORY_INSTR:
             mem_g.add_node(i)
-            # add dependency between node i and all memory node before it
-            mem_g.add_edges_from([(node, i) for node in list(mem_g.nodes)[:-1]])
-
+            if i.opcode not in ["store", "phi"]:
+                # add dependency between node i and all memory node before it
+                mem_g.add_edges_from([(node, i) for node in list(mem_g.nodes)[:-1]])
+            
     # create instr dependencies
     nodes_combinations = it.combinations(instr_g.nodes, 2)
     for instr1, instr2 in nodes_combinations:
@@ -57,6 +63,15 @@ def create_dependency_graphs(block):
 def depends_on(instr1, instr2):
     return instr2 in instr1.operands
 
+def get_load_dependencies(instr, others, block):
+    res = []
+    instr_operands = list(instr.operands)
+    for o_instr in others:
+        if  o_instr.opcode == "store" and have_common_operand(o_instr.operands, instr_operands, block):
+            res.append(o_instr)
+    return res
+
+
 
 def is_before(i1, i2, block):
     return block.index(i1) < block.index(i2)
@@ -65,7 +80,7 @@ def is_before(i1, i2, block):
 def have_common_operand(op_list1, op_list2, block):
     common_op = list(set(op_list1).intersection(op_list2))
     for op in common_op:
-        if op in block:
+        if op not in block:
             common_op.remove(op)
 
     return len(common_op) != 0
@@ -75,5 +90,13 @@ def list_to_string(l):
     s = ""
     for elem in l:
         s += elem
-    return s
+    return s + "\n"
 
+
+def are_equals (path1, path2):
+    im1 = cv2.imread(path1)
+    im2 = cv2.imread(path2)
+    difference = cv2.subtract(im1, im2)
+    b, g, r = cv2.split(difference)
+    if cv2.countNonZero(b) == 0 and cv2.countNonZero(g) == 0 and cv2.countNonZero(r) == 0:
+        return True
