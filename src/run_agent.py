@@ -4,6 +4,8 @@ import sys
 
 import gym
 import numpy as np
+import tensorflow as tf
+
 # from stable_baselines.results_plotter import load_results, ts2xy
 import stable_baselines
 from stable_baselines import DQN, PPO2
@@ -12,12 +14,29 @@ from stable_baselines.common.env_checker import check_env
 from stable_baselines.common.policies import MlpPolicy
 from stable_baselines.deepq.policies import FeedForwardPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
+from stable_baselines.common.callbacks import BaseCallback
 
 from .env import LLVMEnv
 
 import linecache
 import os
 import tracemalloc
+
+
+class TensorboardCallback(BaseCallback):
+    """
+    Custom callback for plotting additional values in tensorboard.
+    """
+    def __init__(self, verbose=0):
+        self.is_tb_set = False
+        super(TensorboardCallback, self).__init__(verbose)
+
+    def _on_step(self) -> bool:
+            # value = 1
+            # print(self.model.ep_info_buf)
+            # summary = tf.Summary(value=[tf.Summary.Value(tag='run_time', simple_value=value)])
+            # self.locals['writer'].add_summary(summary, self.num_timesteps)
+        return True
 
 
 class CustomDQNPolicy(FeedForwardPolicy):
@@ -63,9 +82,6 @@ def main():
 
 
     check_env(env, warn=True)
-    env = DummyVecEnv([lambda: env]*16)
-    # env = stable_baselines.common.make_vec_env(env, n_envs=16)
-
 
     filename = args.filepath.split("/")[-1].split(".")[0]
     exp_name = f"{filename}_{args.algo}_oh_{str(args.onehot)}"
@@ -76,17 +92,19 @@ def main():
     
 
     if args.algo == "dqn":
-        model = DQN(CustomDQNPolicy, env, gamma=0.999, prioritized_replay=True, verbose=1, tensorboard_log=log_file, seed=42)
+        env = DummyVecEnv([lambda: env])
+        model = DQN(CustomDQNPolicy, env, gamma=0.999, prioritized_replay=True, verbose=1, tensorboard_log=log_file)
 
     elif args.algo == "ppo":
-        model = PPO2(MlpPolicy, env, gamma=0.999, n_steps=150, noptepochs=5, tensorboard_log=log_file, seed=42)
+        env = DummyVecEnv([lambda: env]*16)
+        model = PPO2(MlpPolicy, env, gamma=0.999, n_steps=150, noptepochs=5, tensorboard_log=log_file)
 
     print("model created")
 
     # Train the agent
     time_steps = int(args.steps)
     print(time_steps)
-    model.learn(total_timesteps=int(time_steps), tb_log_name=exp_name)
+    model.learn(total_timesteps=int(time_steps), tb_log_name=exp_name, callback=TensorboardCallback())
 
 
 

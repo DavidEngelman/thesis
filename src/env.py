@@ -17,6 +17,7 @@ from gym import spaces
 
 
 from .utils import * 
+from .parse_llvm import LLVMParser
 
 NB_RUNS = 3
 
@@ -85,6 +86,7 @@ class LLVMEnv(gym.Env):
         self.llvm = LLVMController(self.file_path)
 
     def add_instruction(self):
+
         self.llvm.curr_instr_graph.remove_node(self.selected_instruction)
         if self.selected_instruction.opcode in MEMORY_INSTR:
             self.llvm.curr_memory_graph.remove_node(self.selected_instruction)
@@ -116,7 +118,7 @@ class LLVMEnv(gym.Env):
         if done:
             next_state = None
             self.run_time = self.llvm.run(self.timer)
-            reward = 10 -  (self.run_time*10)
+            reward = int(50 -  (self.run_time*self.reward_scaler))
             print(f"[episode done] reward: {reward} -- nb. steps: {self.curr_step} -- avg. shedul. instr.: {np.mean(self.nb_shedulables)} -- run time: {self.run_time} ")
         else:
             reward = 0
@@ -165,7 +167,7 @@ class LLVMEnv(gym.Env):
         Chooses 1 instruction among the schedulables ones to be proposed to the agent
         update the selected_instruction attribute and return the opcode of the instruction
         """
-        self.selected_instruction =  random.sample(instructions, 1)[0]
+        self.selected_instruction =  random.choice(instructions)
         instruction_opcode = self.to_opcode(self.selected_instruction)
         return instruction_opcode
 
@@ -173,10 +175,10 @@ class LLVMEnv(gym.Env):
         """
         Converts the instruction to its opcode
         """
-        if not str(instruction.opcode).strip() in self.instr_to_opcode:
+        if not instruction.opcode in self.instr_to_opcode:
             opcode = self.instr_to_opcode["other"]
         else:
-            opcode = self.instr_to_opcode[str(instruction.opcode).strip()]
+            opcode = self.instr_to_opcode[instruction.opcode]
         return opcode
 
     def compute_operands_ages(self):
@@ -233,8 +235,9 @@ class LLVMController:
             data = file.read()
 
 
-        self.mod = llvm.parse_assembly(data)  # module from the inpute file
-        self.functions, self.llvm_code = self.get_functions()
+        self.mod = LLVMParser.parse(file_path)
+        self.functions = self.mod.functions
+        self.llvm_code = self.get_llvm_code()
         self.original_file = data
     
         self.instr_graphs, self.memory_graphs = self.create_all_graphs()
@@ -255,33 +258,13 @@ class LLVMController:
         self.function_start = 0
         self.index_file_start = 0
 
-
-        # def get_blocks(self):
-
-    #     blocks = []
-    #     for func in self.mod.functions:
-    #         for block in func.blocks:
-    #             block_instructions = []
-    #             for instruction in block.instructions:
-    #                 print(instruction)
-    #                 block_instructions.append(instruction)
-    #             blocks.append(block_instructions)
-    #     return blocks
-
-    def get_functions(self):
-        functions = []
-        llvm_file = []
+    def get_llvm_code(self):
+        llvm_code= []
         for func in self.mod.functions:
-            function_blocks = []
             for block in func.blocks:
-                block_instructions = []
                 for instruction in block.instructions:
-                    block_instructions.append(instruction)
-                    llvm_file.append(str(instruction))
-                function_blocks.append(block_instructions)
-            if len(function_blocks):
-                functions.append(function_blocks)
-        return functions, llvm_file
+                    llvm_code.append(instruction.str_repr)
+        return llvm_code
 
 
     def create_all_graphs(self):
@@ -291,11 +274,11 @@ class LLVMController:
 
         all_instr_graphs = []
         all_memory_graphs = []
-        for function in self.functions:
+        for function in self.mod.functions:
             function_instr_graph = []
             function_memory_graph = []
-            for block in function:
-                instr_graph, memory_graph = create_dependency_graphs(block)
+            for block in function.blocks:
+                instr_graph, memory_graph = create_dependency_graphs(block.instructions)
                 function_instr_graph.append(instr_graph)
                 function_memory_graph.append(memory_graph)
 
@@ -305,7 +288,7 @@ class LLVMController:
         return all_instr_graphs, all_memory_graphs
 
     def get_block_instructions(self):
-        return self.functions[self.curr_function][self.curr_block]
+        return self.functions[self.curr_function].blocks[self.curr_block]
 
     def init_new_block(self):
         self.scheduled_instructions = []
@@ -357,15 +340,16 @@ class LLVMController:
         
         replaced_block = []
         for i, b in enumerate(self.functions[self.curr_function]):
-            block_first_instruction = (str(b[0]))
-            block_last_instruction = (str(b[-1]))
+            block_first_instruction = b[0].str_repr
+            block_last_instruction = b[-1].str_repr
 
-            to_replace = [reformat_string(str(inst)) for inst in self.reordered_blocks[i]]
+            to_replace = [reformat_string(inst.str_repr) for inst in self.reordered_blocks[i]]
             replaced_block.extend(to_replace)
 
             string_start = self.original_file.index(block_first_instruction, self.index_file_start)
             string_end = self.original_file.index(block_last_instruction, string_start) + len(block_last_instruction) - 1
             self.index_file_start = string_end
+            
 
             new_string = list_to_string(to_replace)
             self.string_file = self.string_file.replace(
@@ -375,11 +359,12 @@ class LLVMController:
 
 
         # current function first block first instruction
-        function_first_instruction = str(self.reordered_blocks[0][0])
+        function_first_instruction = self.reordered_blocks[0][0].str_repr
         # current function last block last instruction
-        function_last_instruction = str(self.reordered_blocks[-1][-1])
-
+        function_last_instruction = self.reordered_blocks[-1][-1].str_repr
         function_start_index = self.string_file.index(function_first_instruction, self.function_start)
+       
+        # print(self.string_file)
         function_end_index = self.string_file.index(function_last_instruction, function_start_index) + len(function_last_instruction) - 1
         self.function_start = function_end_index
 
@@ -444,14 +429,18 @@ class LLVMController:
         with open("llvm_file.ll", "w") as text_file:
             text_file.write(self.string_file)
         # compile it using clang
-        subprocess.run(["clang-7", "-O2", "-march=native", "-mllvm", "-enable-misched=False",   "-o", "res", "llvm_file.ll", "-lm"])
+        subprocess.run(["clang-7", 
+                        "-o", "res", 
+                        "llvm_file.ll", 
+                        # "-mllvm", "-enable-misched=false",
+                        "-lm",
+                        ])
         # time program
         times = []
 
         # select only one cpu
         pid = os.getpid()
         os.sched_setaffinity(pid, {0})
-
         for _ in range(NB_RUNS):
             usage_start = resource.getrusage(resource.RUSAGE_CHILDREN)
             # subprocess.run(["./res"])

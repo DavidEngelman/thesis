@@ -1,4 +1,4 @@
-; ModuleID = '../c-ray/c-ray-f-2.ll'
+; ModuleID = 'c-ray-f-2.c'
 source_filename = "c-ray-f-2.c"
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
@@ -14,28 +14,28 @@ target triple = "x86_64-pc-linux-gnu"
 %struct.ray = type { %struct.vec3, %struct.vec3 }
 %struct.spoint = type { %struct.vec3, %struct.vec3, %struct.vec3, double }
 
-@xres = global i32 800, align 4
-@yres = global i32 600, align 4
-@aspect = global double 0x3FF55554FBDAD752, align 8
-@lnum = global i32 0, align 4
+@xres = dso_local global i32 800, align 4
+@yres = dso_local global i32 600, align 4
+@aspect = dso_local global double 0x3FF55554FBDAD752, align 8
+@lnum = dso_local global i32 0, align 4
 @.str = private unnamed_addr constant [363 x i8] c"Usage: c-ray-f [options]\0A  Reads a scene file from stdin, writes the image to stdout, and stats to stderr.\0A\0AOptions:\0A  -s WxH     where W is the width and H the height of the image\0A  -r <rays>  shoot <rays> rays per pixel (antialiasing)\0A  -i <file>  read from <file> instead of stdin\0A  -o <file>  write to <file> instead of stdout\0A  -h         this help screen\0A\0A\00", align 1
-@usage = global i8* getelementptr inbounds ([363 x i8], [363 x i8]* @.str, i32 0, i32 0), align 8
-@stdin = external global %struct._IO_FILE*, align 8
-@stdout = external global %struct._IO_FILE*, align 8
+@usage = dso_local global i8* getelementptr inbounds ([363 x i8], [363 x i8]* @.str, i32 0, i32 0), align 8
+@stdin = external dso_local global %struct._IO_FILE*, align 8
+@stdout = external dso_local global %struct._IO_FILE*, align 8
 @.str.1 = private unnamed_addr constant [6 x i8] c"scene\00", align 1
 @.str.2 = private unnamed_addr constant [2 x i8] c"r\00", align 1
 @.str.3 = private unnamed_addr constant [15 x i8] c"rendered_scene\00", align 1
 @.str.4 = private unnamed_addr constant [2 x i8] c"w\00", align 1
 @.str.5 = private unnamed_addr constant [31 x i8] c"pixel buffer allocation failed\00", align 1
-@urand = common global [1024 x %struct.vec3] zeroinitializer, align 16
-@irand = common global [1024 x i32] zeroinitializer, align 16
-@stderr = external global %struct._IO_FILE*, align 8
+@urand = common dso_local global [1024 x %struct.vec3] zeroinitializer, align 16
+@irand = common dso_local global [1024 x i32] zeroinitializer, align 16
+@stderr = external dso_local global %struct._IO_FILE*, align 8
 @.str.6 = private unnamed_addr constant [48 x i8] c"Rendering took: %lu seconds (%lu milliseconds)\0A\00", align 1
 @.str.7 = private unnamed_addr constant [14 x i8] c"P6\0A%d %d\0A255\0A\00", align 1
-@obj_list = common global %struct.sphere* null, align 8
-@lights = common global [16 x %struct.vec3] zeroinitializer, align 16
+@obj_list = common dso_local global %struct.sphere* null, align 8
+@lights = common dso_local global [16 x %struct.vec3] zeroinitializer, align 16
 @get_primary_ray.j = private unnamed_addr constant %struct.vec3 { double 0.000000e+00, double 1.000000e+00, double 0.000000e+00 }, align 8
-@cam = common global %struct.camera zeroinitializer, align 8
+@cam = common dso_local global %struct.camera zeroinitializer, align 8
 @get_sample_pos.sf = internal global double 0.000000e+00, align 8
 @.str.8 = private unnamed_addr constant [4 x i8] c" \09\0A\00", align 1
 @.str.9 = private unnamed_addr constant [18 x i8] c"unknown type: %c\0A\00", align 1
@@ -43,7 +43,7 @@ target triple = "x86_64-pc-linux-gnu"
 @get_msec.first_timeval = internal global %struct.timeval zeroinitializer, align 8
 
 ; Function Attrs: noinline nounwind optnone uwtable
-define i32 @main() #0 {
+define dso_local i32 @main() #0 {
   %1 = alloca i32, align 4
   %2 = alloca i32, align 4
   %3 = alloca i64, align 8
@@ -262,15 +262,15 @@ define i32 @main() #0 {
   ret i32 %144
 }
 
-declare %struct._IO_FILE* @fopen(i8*, i8*) #1
+declare dso_local %struct._IO_FILE* @fopen(i8*, i8*) #1
 
 ; Function Attrs: nounwind
-declare noalias i8* @malloc(i64) #2
+declare dso_local noalias i8* @malloc(i64) #2
 
-declare void @perror(i8*) #1
+declare dso_local void @perror(i8*) #1
 
 ; Function Attrs: noinline nounwind optnone uwtable
-define void @load_scene(%struct._IO_FILE*) #0 {
+define dso_local void @load_scene(%struct._IO_FILE*) #0 {
   %2 = alloca %struct._IO_FILE*, align 8
   %3 = alloca [256 x i8], align 16
   %4 = alloca i8*, align 8
@@ -554,10 +554,10 @@ define void @load_scene(%struct._IO_FILE*) #0 {
 }
 
 ; Function Attrs: nounwind
-declare i32 @rand() #2
+declare dso_local i32 @rand() #2
 
 ; Function Attrs: noinline nounwind optnone uwtable
-define i64 @get_msec() #0 {
+define dso_local i64 @get_msec() #0 {
   %1 = alloca i64, align 8
   %2 = call i32 @gettimeofday(%struct.timeval* @get_msec.timeval, %struct.timezone* null) #5
   %3 = load i64, i64* getelementptr inbounds (%struct.timeval, %struct.timeval* @get_msec.first_timeval, i32 0, i32 0), align 8
@@ -588,7 +588,7 @@ define i64 @get_msec() #0 {
 }
 
 ; Function Attrs: noinline nounwind optnone uwtable
-define void @render(i32, i32, i32*, i32) #0 {
+define dso_local void @render(i32, i32, i32*, i32) #0 {
   %5 = alloca i32, align 4
   %6 = alloca i32, align 4
   %7 = alloca i32*, align 8
@@ -762,525 +762,514 @@ define void @render(i32, i32, i32*, i32) #0 {
   ret void
 }
 
-declare i32 @fprintf(%struct._IO_FILE*, i8*, ...) #1
+declare dso_local i32 @fprintf(%struct._IO_FILE*, i8*, ...) #1
 
-declare i32 @fputc(i32, %struct._IO_FILE*) #1
+declare dso_local i32 @fputc(i32, %struct._IO_FILE*) #1
 
-declare i32 @fflush(%struct._IO_FILE*) #1
+declare dso_local i32 @fflush(%struct._IO_FILE*) #1
 
-declare i32 @fclose(%struct._IO_FILE*) #1
+declare dso_local i32 @fclose(%struct._IO_FILE*) #1
 
 ; Function Attrs: noinline nounwind optnone uwtable
-define void @trace(%struct.vec3* noalias sret, %struct.ray* byval align 8, i32) #0 {
+define dso_local void @trace(%struct.vec3* noalias sret, %struct.ray* byval align 8, i32) #0 {
   %4 = alloca i32, align 4
-  %5 = alloca %struct.vec3, align 8
+  %5 = alloca %struct.spoint, align 8
   %6 = alloca %struct.spoint, align 8
-  %7 = alloca %struct.spoint, align 8
+  %7 = alloca %struct.sphere*, align 8
   %8 = alloca %struct.sphere*, align 8
-  %9 = alloca %struct.sphere*, align 8
-  %10 = alloca %struct.vec3, align 8
+  %9 = alloca %struct.vec3, align 8
   store i32 %2, i32* %4, align 4
-  store %struct.sphere* null, %struct.sphere** %8, align 8
-  %11 = load %struct.sphere*, %struct.sphere** @obj_list, align 8
-  %12 = getelementptr inbounds %struct.sphere, %struct.sphere* %11, i32 0, i32 3
-  %13 = load %struct.sphere*, %struct.sphere** %12, align 8
-  store %struct.sphere* %13, %struct.sphere** %9, align 8
-  %14 = load i32, i32* %4, align 4
-  %15 = icmp sge i32 %14, 5
-  br i1 %15, label %16, label %22
+  store %struct.sphere* null, %struct.sphere** %7, align 8
+  %10 = load %struct.sphere*, %struct.sphere** @obj_list, align 8
+  %11 = getelementptr inbounds %struct.sphere, %struct.sphere* %10, i32 0, i32 3
+  %12 = load %struct.sphere*, %struct.sphere** %11, align 8
+  store %struct.sphere* %12, %struct.sphere** %8, align 8
+  %13 = load i32, i32* %4, align 4
+  %14 = icmp sge i32 %13, 5
+  br i1 %14, label %15, label %19
 
-; <label>:16:                                     ; preds = %3
-  %17 = getelementptr inbounds %struct.vec3, %struct.vec3* %5, i32 0, i32 2
+; <label>:15:                                     ; preds = %3
+  %16 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 2
+  store double 0.000000e+00, double* %16, align 8
+  %17 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 1
   store double 0.000000e+00, double* %17, align 8
-  %18 = getelementptr inbounds %struct.vec3, %struct.vec3* %5, i32 0, i32 1
+  %18 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 0
   store double 0.000000e+00, double* %18, align 8
-  %19 = getelementptr inbounds %struct.vec3, %struct.vec3* %5, i32 0, i32 0
-  store double 0.000000e+00, double* %19, align 8
-  %20 = bitcast %struct.vec3* %0 to i8*
-  %21 = bitcast %struct.vec3* %5 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %20, i8* align 8 %21, i64 24, i1 false)
-  br label %63
+  br label %58
 
-; <label>:22:                                     ; preds = %3
-  br label %23
+; <label>:19:                                     ; preds = %3
+  br label %20
 
-; <label>:23:                                     ; preds = %44, %22
-  %24 = load %struct.sphere*, %struct.sphere** %9, align 8
-  %25 = icmp ne %struct.sphere* %24, null
-  br i1 %25, label %26, label %48
+; <label>:20:                                     ; preds = %41, %19
+  %21 = load %struct.sphere*, %struct.sphere** %8, align 8
+  %22 = icmp ne %struct.sphere* %21, null
+  br i1 %22, label %23, label %45
 
-; <label>:26:                                     ; preds = %23
-  %27 = load %struct.sphere*, %struct.sphere** %9, align 8
-  %28 = call i32 @ray_sphere(%struct.sphere* %27, %struct.ray* byval align 8 %1, %struct.spoint* %6)
-  %29 = icmp ne i32 %28, 0
-  br i1 %29, label %30, label %44
+; <label>:23:                                     ; preds = %20
+  %24 = load %struct.sphere*, %struct.sphere** %8, align 8
+  %25 = call i32 @ray_sphere(%struct.sphere* %24, %struct.ray* byval align 8 %1, %struct.spoint* %5)
+  %26 = icmp ne i32 %25, 0
+  br i1 %26, label %27, label %41
 
-; <label>:30:                                     ; preds = %26
-  %31 = load %struct.sphere*, %struct.sphere** %8, align 8
-  %32 = icmp ne %struct.sphere* %31, null
-  br i1 %32, label %33, label %39
+; <label>:27:                                     ; preds = %23
+  %28 = load %struct.sphere*, %struct.sphere** %7, align 8
+  %29 = icmp ne %struct.sphere* %28, null
+  br i1 %29, label %30, label %36
 
-; <label>:33:                                     ; preds = %30
-  %34 = getelementptr inbounds %struct.spoint, %struct.spoint* %6, i32 0, i32 3
-  %35 = load double, double* %34, align 8
-  %36 = getelementptr inbounds %struct.spoint, %struct.spoint* %7, i32 0, i32 3
-  %37 = load double, double* %36, align 8
-  %38 = fcmp olt double %35, %37
-  br i1 %38, label %39, label %43
+; <label>:30:                                     ; preds = %27
+  %31 = getelementptr inbounds %struct.spoint, %struct.spoint* %5, i32 0, i32 3
+  %32 = load double, double* %31, align 8
+  %33 = getelementptr inbounds %struct.spoint, %struct.spoint* %6, i32 0, i32 3
+  %34 = load double, double* %33, align 8
+  %35 = fcmp olt double %32, %34
+  br i1 %35, label %36, label %40
 
-; <label>:39:                                     ; preds = %33, %30
-  %40 = load %struct.sphere*, %struct.sphere** %9, align 8
-  store %struct.sphere* %40, %struct.sphere** %8, align 8
-  %41 = bitcast %struct.spoint* %7 to i8*
-  %42 = bitcast %struct.spoint* %6 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %41, i8* align 8 %42, i64 80, i1 false)
-  br label %43
+; <label>:36:                                     ; preds = %30, %27
+  %37 = load %struct.sphere*, %struct.sphere** %8, align 8
+  store %struct.sphere* %37, %struct.sphere** %7, align 8
+  %38 = bitcast %struct.spoint* %6 to i8*
+  %39 = bitcast %struct.spoint* %5 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %38, i8* align 8 %39, i64 80, i1 false)
+  br label %40
 
-; <label>:43:                                     ; preds = %39, %33
-  br label %44
+; <label>:40:                                     ; preds = %36, %30
+  br label %41
 
-; <label>:44:                                     ; preds = %43, %26
-  %45 = load %struct.sphere*, %struct.sphere** %9, align 8
-  %46 = getelementptr inbounds %struct.sphere, %struct.sphere* %45, i32 0, i32 3
-  %47 = load %struct.sphere*, %struct.sphere** %46, align 8
-  store %struct.sphere* %47, %struct.sphere** %9, align 8
-  br label %23
+; <label>:41:                                     ; preds = %40, %23
+  %42 = load %struct.sphere*, %struct.sphere** %8, align 8
+  %43 = getelementptr inbounds %struct.sphere, %struct.sphere* %42, i32 0, i32 3
+  %44 = load %struct.sphere*, %struct.sphere** %43, align 8
+  store %struct.sphere* %44, %struct.sphere** %8, align 8
+  br label %20
 
-; <label>:48:                                     ; preds = %23
-  %49 = load %struct.sphere*, %struct.sphere** %8, align 8
-  %50 = icmp ne %struct.sphere* %49, null
-  br i1 %50, label %51, label %56
+; <label>:45:                                     ; preds = %20
+  %46 = load %struct.sphere*, %struct.sphere** %7, align 8
+  %47 = icmp ne %struct.sphere* %46, null
+  br i1 %47, label %48, label %53
 
-; <label>:51:                                     ; preds = %48
-  %52 = load %struct.sphere*, %struct.sphere** %8, align 8
-  %53 = load i32, i32* %4, align 4
-  call void @shade(%struct.vec3* sret %10, %struct.sphere* %52, %struct.spoint* %7, i32 %53)
-  %54 = bitcast %struct.vec3* %5 to i8*
-  %55 = bitcast %struct.vec3* %10 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %54, i8* align 8 %55, i64 24, i1 false)
-  br label %60
+; <label>:48:                                     ; preds = %45
+  %49 = load %struct.sphere*, %struct.sphere** %7, align 8
+  %50 = load i32, i32* %4, align 4
+  call void @shade(%struct.vec3* sret %9, %struct.sphere* %49, %struct.spoint* %6, i32 %50)
+  %51 = bitcast %struct.vec3* %0 to i8*
+  %52 = bitcast %struct.vec3* %9 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %51, i8* align 8 %52, i64 24, i1 false)
+  br label %57
 
-; <label>:56:                                     ; preds = %48
-  %57 = getelementptr inbounds %struct.vec3, %struct.vec3* %5, i32 0, i32 2
-  store double 0.000000e+00, double* %57, align 8
-  %58 = getelementptr inbounds %struct.vec3, %struct.vec3* %5, i32 0, i32 1
-  store double 0.000000e+00, double* %58, align 8
-  %59 = getelementptr inbounds %struct.vec3, %struct.vec3* %5, i32 0, i32 0
-  store double 0.000000e+00, double* %59, align 8
-  br label %60
+; <label>:53:                                     ; preds = %45
+  %54 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 2
+  store double 0.000000e+00, double* %54, align 8
+  %55 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 1
+  store double 0.000000e+00, double* %55, align 8
+  %56 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 0
+  store double 0.000000e+00, double* %56, align 8
+  br label %57
 
-; <label>:60:                                     ; preds = %56, %51
-  %61 = bitcast %struct.vec3* %0 to i8*
-  %62 = bitcast %struct.vec3* %5 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %61, i8* align 8 %62, i64 24, i1 false)
-  br label %63
+; <label>:57:                                     ; preds = %53, %48
+  br label %58
 
-; <label>:63:                                     ; preds = %60, %16
+; <label>:58:                                     ; preds = %57, %15
   ret void
 }
 
 ; Function Attrs: noinline nounwind optnone uwtable
-define void @get_primary_ray(%struct.ray* noalias sret, i32, i32, i32) #0 {
+define dso_local void @get_primary_ray(%struct.ray* noalias sret, i32, i32, i32) #0 {
   %5 = alloca i32, align 4
   %6 = alloca i32, align 4
   %7 = alloca i32, align 4
-  %8 = alloca %struct.ray, align 8
-  %9 = alloca [3 x [3 x float]], align 16
+  %8 = alloca [3 x [3 x float]], align 16
+  %9 = alloca %struct.vec3, align 8
   %10 = alloca %struct.vec3, align 8
   %11 = alloca %struct.vec3, align 8
   %12 = alloca %struct.vec3, align 8
   %13 = alloca %struct.vec3, align 8
   %14 = alloca %struct.vec3, align 8
-  %15 = alloca %struct.vec3, align 8
-  %16 = alloca double, align 8
+  %15 = alloca double, align 8
+  %16 = alloca %struct.vec3, align 8
   %17 = alloca %struct.vec3, align 8
   %18 = alloca %struct.vec3, align 8
-  %19 = alloca %struct.vec3, align 8
   store i32 %1, i32* %5, align 4
   store i32 %2, i32* %6, align 4
   store i32 %3, i32* %7, align 4
-  %20 = bitcast %struct.vec3* %11 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %20, i8* align 8 bitcast (%struct.vec3* @get_primary_ray.j to i8*), i64 24, i1 false)
-  %21 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 1, i32 0), align 8
-  %22 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 0, i32 0), align 8
-  %23 = fsub double %21, %22
-  %24 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
-  store double %23, double* %24, align 8
-  %25 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 1, i32 1), align 8
-  %26 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 0, i32 1), align 8
-  %27 = fsub double %25, %26
-  %28 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
-  store double %27, double* %28, align 8
-  %29 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 1, i32 2), align 8
-  %30 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 0, i32 2), align 8
-  %31 = fsub double %29, %30
-  %32 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
-  store double %31, double* %32, align 8
-  br label %33
+  %19 = bitcast %struct.vec3* %10 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %19, i8* align 8 bitcast (%struct.vec3* @get_primary_ray.j to i8*), i64 24, i1 false)
+  %20 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 1, i32 0), align 8
+  %21 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 0, i32 0), align 8
+  %22 = fsub double %20, %21
+  %23 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 0
+  store double %22, double* %23, align 8
+  %24 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 1, i32 1), align 8
+  %25 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 0, i32 1), align 8
+  %26 = fsub double %24, %25
+  %27 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 1
+  store double %26, double* %27, align 8
+  %28 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 1, i32 2), align 8
+  %29 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 0, i32 2), align 8
+  %30 = fsub double %28, %29
+  %31 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 2
+  store double %30, double* %31, align 8
+  br label %32
 
-; <label>:33:                                     ; preds = %4
-  %34 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
-  %35 = load double, double* %34, align 8
-  %36 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
-  %37 = load double, double* %36, align 8
-  %38 = fmul double %35, %37
-  %39 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
-  %40 = load double, double* %39, align 8
-  %41 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
-  %42 = load double, double* %41, align 8
-  %43 = fmul double %40, %42
-  %44 = fadd double %38, %43
-  %45 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
-  %46 = load double, double* %45, align 8
-  %47 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
-  %48 = load double, double* %47, align 8
-  %49 = fmul double %46, %48
-  %50 = fadd double %44, %49
-  %51 = call double @sqrt(double %50) #5
-  store double %51, double* %16, align 8
-  %52 = load double, double* %16, align 8
-  %53 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
-  %54 = load double, double* %53, align 8
-  %55 = fdiv double %54, %52
-  store double %55, double* %53, align 8
-  %56 = load double, double* %16, align 8
-  %57 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
-  %58 = load double, double* %57, align 8
-  %59 = fdiv double %58, %56
-  store double %59, double* %57, align 8
-  %60 = load double, double* %16, align 8
-  %61 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
-  %62 = load double, double* %61, align 8
-  %63 = fdiv double %62, %60
-  store double %63, double* %61, align 8
-  br label %64
+; <label>:32:                                     ; preds = %4
+  %33 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 0
+  %34 = load double, double* %33, align 8
+  %35 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 0
+  %36 = load double, double* %35, align 8
+  %37 = fmul double %34, %36
+  %38 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 1
+  %39 = load double, double* %38, align 8
+  %40 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 1
+  %41 = load double, double* %40, align 8
+  %42 = fmul double %39, %41
+  %43 = fadd double %37, %42
+  %44 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 2
+  %45 = load double, double* %44, align 8
+  %46 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 2
+  %47 = load double, double* %46, align 8
+  %48 = fmul double %45, %47
+  %49 = fadd double %43, %48
+  %50 = call double @sqrt(double %49) #5
+  store double %50, double* %15, align 8
+  %51 = load double, double* %15, align 8
+  %52 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 0
+  %53 = load double, double* %52, align 8
+  %54 = fdiv double %53, %51
+  store double %54, double* %52, align 8
+  %55 = load double, double* %15, align 8
+  %56 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 1
+  %57 = load double, double* %56, align 8
+  %58 = fdiv double %57, %55
+  store double %58, double* %56, align 8
+  %59 = load double, double* %15, align 8
+  %60 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 2
+  %61 = load double, double* %60, align 8
+  %62 = fdiv double %61, %59
+  store double %62, double* %60, align 8
+  br label %63
 
-; <label>:64:                                     ; preds = %33
-  call void @cross_product(%struct.vec3* sret %17, %struct.vec3* byval align 8 %11, %struct.vec3* byval align 8 %12)
-  %65 = bitcast %struct.vec3* %10 to i8*
-  %66 = bitcast %struct.vec3* %17 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %65, i8* align 8 %66, i64 24, i1 false)
-  call void @cross_product(%struct.vec3* sret %18, %struct.vec3* byval align 8 %12, %struct.vec3* byval align 8 %10)
-  %67 = bitcast %struct.vec3* %11 to i8*
-  %68 = bitcast %struct.vec3* %18 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %67, i8* align 8 %68, i64 24, i1 false)
-  %69 = getelementptr inbounds %struct.vec3, %struct.vec3* %10, i32 0, i32 0
-  %70 = load double, double* %69, align 8
-  %71 = fptrunc double %70 to float
-  %72 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 0
-  %73 = getelementptr inbounds [3 x float], [3 x float]* %72, i64 0, i64 0
-  store float %71, float* %73, align 16
-  %74 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 0
-  %75 = load double, double* %74, align 8
-  %76 = fptrunc double %75 to float
-  %77 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 0
-  %78 = getelementptr inbounds [3 x float], [3 x float]* %77, i64 0, i64 1
-  store float %76, float* %78, align 4
-  %79 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
-  %80 = load double, double* %79, align 8
-  %81 = fptrunc double %80 to float
-  %82 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 0
-  %83 = getelementptr inbounds [3 x float], [3 x float]* %82, i64 0, i64 2
-  store float %81, float* %83, align 8
-  %84 = getelementptr inbounds %struct.vec3, %struct.vec3* %10, i32 0, i32 1
-  %85 = load double, double* %84, align 8
-  %86 = fptrunc double %85 to float
-  %87 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 1
-  %88 = getelementptr inbounds [3 x float], [3 x float]* %87, i64 0, i64 0
-  store float %86, float* %88, align 4
-  %89 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 1
-  %90 = load double, double* %89, align 8
-  %91 = fptrunc double %90 to float
-  %92 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 1
-  %93 = getelementptr inbounds [3 x float], [3 x float]* %92, i64 0, i64 1
-  store float %91, float* %93, align 4
-  %94 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
-  %95 = load double, double* %94, align 8
-  %96 = fptrunc double %95 to float
-  %97 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 1
-  %98 = getelementptr inbounds [3 x float], [3 x float]* %97, i64 0, i64 2
-  store float %96, float* %98, align 4
-  %99 = getelementptr inbounds %struct.vec3, %struct.vec3* %10, i32 0, i32 2
-  %100 = load double, double* %99, align 8
-  %101 = fptrunc double %100 to float
-  %102 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 2
-  %103 = getelementptr inbounds [3 x float], [3 x float]* %102, i64 0, i64 0
-  store float %101, float* %103, align 8
-  %104 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 2
-  %105 = load double, double* %104, align 8
-  %106 = fptrunc double %105 to float
-  %107 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 2
-  %108 = getelementptr inbounds [3 x float], [3 x float]* %107, i64 0, i64 1
-  store float %106, float* %108, align 4
-  %109 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
-  %110 = load double, double* %109, align 8
-  %111 = fptrunc double %110 to float
-  %112 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 2
-  %113 = getelementptr inbounds [3 x float], [3 x float]* %112, i64 0, i64 2
-  store float %111, float* %113, align 8
-  %114 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
-  %115 = getelementptr inbounds %struct.vec3, %struct.vec3* %114, i32 0, i32 2
-  store double 0.000000e+00, double* %115, align 8
-  %116 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
-  %117 = getelementptr inbounds %struct.vec3, %struct.vec3* %116, i32 0, i32 1
-  store double 0.000000e+00, double* %117, align 8
-  %118 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
-  %119 = getelementptr inbounds %struct.vec3, %struct.vec3* %118, i32 0, i32 0
-  store double 0.000000e+00, double* %119, align 8
-  %120 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 1
-  %121 = load i32, i32* %5, align 4
-  %122 = load i32, i32* %6, align 4
-  %123 = load i32, i32* %7, align 4
-  call void @get_sample_pos(%struct.vec3* sret %19, i32 %121, i32 %122, i32 %123)
-  %124 = bitcast %struct.vec3* %120 to i8*
-  %125 = bitcast %struct.vec3* %19 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %124, i8* align 8 %125, i64 24, i1 false)
-  %126 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 1
-  %127 = getelementptr inbounds %struct.vec3, %struct.vec3* %126, i32 0, i32 2
-  store double 0x40045F306F4445A0, double* %127, align 8
-  %128 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 1
-  %129 = getelementptr inbounds %struct.vec3, %struct.vec3* %128, i32 0, i32 0
-  %130 = load double, double* %129, align 8
-  %131 = fmul double %130, 1.000000e+03
-  store double %131, double* %129, align 8
-  %132 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 1
-  %133 = getelementptr inbounds %struct.vec3, %struct.vec3* %132, i32 0, i32 1
-  %134 = load double, double* %133, align 8
-  %135 = fmul double %134, 1.000000e+03
-  store double %135, double* %133, align 8
-  %136 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 1
-  %137 = getelementptr inbounds %struct.vec3, %struct.vec3* %136, i32 0, i32 2
-  %138 = load double, double* %137, align 8
-  %139 = fmul double %138, 1.000000e+03
-  store double %139, double* %137, align 8
-  %140 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 1
-  %141 = getelementptr inbounds %struct.vec3, %struct.vec3* %140, i32 0, i32 0
-  %142 = load double, double* %141, align 8
-  %143 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
-  %144 = getelementptr inbounds %struct.vec3, %struct.vec3* %143, i32 0, i32 0
-  %145 = load double, double* %144, align 8
-  %146 = fadd double %142, %145
-  %147 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 0
-  store double %146, double* %147, align 8
-  %148 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 1
-  %149 = getelementptr inbounds %struct.vec3, %struct.vec3* %148, i32 0, i32 1
-  %150 = load double, double* %149, align 8
-  %151 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
-  %152 = getelementptr inbounds %struct.vec3, %struct.vec3* %151, i32 0, i32 1
-  %153 = load double, double* %152, align 8
-  %154 = fadd double %150, %153
-  %155 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 1
-  store double %154, double* %155, align 8
-  %156 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 1
-  %157 = getelementptr inbounds %struct.vec3, %struct.vec3* %156, i32 0, i32 2
-  %158 = load double, double* %157, align 8
-  %159 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
-  %160 = getelementptr inbounds %struct.vec3, %struct.vec3* %159, i32 0, i32 2
-  %161 = load double, double* %160, align 8
-  %162 = fadd double %158, %161
-  %163 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 2
-  store double %162, double* %163, align 8
-  %164 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 0
-  %165 = load double, double* %164, align 8
-  %166 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 0
-  %167 = getelementptr inbounds [3 x float], [3 x float]* %166, i64 0, i64 0
-  %168 = load float, float* %167, align 16
-  %169 = fpext float %168 to double
-  %170 = fmul double %165, %169
-  %171 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 1
-  %172 = load double, double* %171, align 8
-  %173 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 0
-  %174 = getelementptr inbounds [3 x float], [3 x float]* %173, i64 0, i64 1
-  %175 = load float, float* %174, align 4
-  %176 = fpext float %175 to double
-  %177 = fmul double %172, %176
-  %178 = fadd double %170, %177
-  %179 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 2
-  %180 = load double, double* %179, align 8
-  %181 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 0
-  %182 = getelementptr inbounds [3 x float], [3 x float]* %181, i64 0, i64 2
-  %183 = load float, float* %182, align 8
-  %184 = fpext float %183 to double
-  %185 = fmul double %180, %184
-  %186 = fadd double %178, %185
-  %187 = getelementptr inbounds %struct.vec3, %struct.vec3* %15, i32 0, i32 0
-  store double %186, double* %187, align 8
-  %188 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 0
-  %189 = load double, double* %188, align 8
-  %190 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 1
-  %191 = getelementptr inbounds [3 x float], [3 x float]* %190, i64 0, i64 0
-  %192 = load float, float* %191, align 4
-  %193 = fpext float %192 to double
-  %194 = fmul double %189, %193
-  %195 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 1
-  %196 = load double, double* %195, align 8
-  %197 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 1
-  %198 = getelementptr inbounds [3 x float], [3 x float]* %197, i64 0, i64 1
-  %199 = load float, float* %198, align 4
-  %200 = fpext float %199 to double
-  %201 = fmul double %196, %200
-  %202 = fadd double %194, %201
-  %203 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 2
-  %204 = load double, double* %203, align 8
-  %205 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 1
-  %206 = getelementptr inbounds [3 x float], [3 x float]* %205, i64 0, i64 2
-  %207 = load float, float* %206, align 4
-  %208 = fpext float %207 to double
-  %209 = fmul double %204, %208
-  %210 = fadd double %202, %209
-  %211 = getelementptr inbounds %struct.vec3, %struct.vec3* %15, i32 0, i32 1
-  store double %210, double* %211, align 8
-  %212 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 0
-  %213 = load double, double* %212, align 8
-  %214 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 2
-  %215 = getelementptr inbounds [3 x float], [3 x float]* %214, i64 0, i64 0
-  %216 = load float, float* %215, align 8
-  %217 = fpext float %216 to double
-  %218 = fmul double %213, %217
-  %219 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 1
-  %220 = load double, double* %219, align 8
-  %221 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 2
-  %222 = getelementptr inbounds [3 x float], [3 x float]* %221, i64 0, i64 1
-  %223 = load float, float* %222, align 4
-  %224 = fpext float %223 to double
-  %225 = fmul double %220, %224
-  %226 = fadd double %218, %225
-  %227 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 2
-  %228 = load double, double* %227, align 8
-  %229 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 2
-  %230 = getelementptr inbounds [3 x float], [3 x float]* %229, i64 0, i64 2
-  %231 = load float, float* %230, align 8
-  %232 = fpext float %231 to double
-  %233 = fmul double %228, %232
-  %234 = fadd double %226, %233
-  %235 = getelementptr inbounds %struct.vec3, %struct.vec3* %15, i32 0, i32 2
-  store double %234, double* %235, align 8
-  %236 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
-  %237 = getelementptr inbounds %struct.vec3, %struct.vec3* %236, i32 0, i32 0
-  %238 = load double, double* %237, align 8
-  %239 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 0
-  %240 = getelementptr inbounds [3 x float], [3 x float]* %239, i64 0, i64 0
-  %241 = load float, float* %240, align 16
-  %242 = fpext float %241 to double
-  %243 = fmul double %238, %242
-  %244 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
-  %245 = getelementptr inbounds %struct.vec3, %struct.vec3* %244, i32 0, i32 1
-  %246 = load double, double* %245, align 8
-  %247 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 0
-  %248 = getelementptr inbounds [3 x float], [3 x float]* %247, i64 0, i64 1
-  %249 = load float, float* %248, align 4
-  %250 = fpext float %249 to double
-  %251 = fmul double %246, %250
-  %252 = fadd double %243, %251
-  %253 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
-  %254 = getelementptr inbounds %struct.vec3, %struct.vec3* %253, i32 0, i32 2
-  %255 = load double, double* %254, align 8
-  %256 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 0
-  %257 = getelementptr inbounds [3 x float], [3 x float]* %256, i64 0, i64 2
-  %258 = load float, float* %257, align 8
-  %259 = fpext float %258 to double
-  %260 = fmul double %255, %259
-  %261 = fadd double %252, %260
-  %262 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 0, i32 0), align 8
-  %263 = fadd double %261, %262
-  %264 = getelementptr inbounds %struct.vec3, %struct.vec3* %14, i32 0, i32 0
-  store double %263, double* %264, align 8
-  %265 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
-  %266 = getelementptr inbounds %struct.vec3, %struct.vec3* %265, i32 0, i32 0
-  %267 = load double, double* %266, align 8
-  %268 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 1
-  %269 = getelementptr inbounds [3 x float], [3 x float]* %268, i64 0, i64 0
-  %270 = load float, float* %269, align 4
-  %271 = fpext float %270 to double
-  %272 = fmul double %267, %271
-  %273 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
-  %274 = getelementptr inbounds %struct.vec3, %struct.vec3* %273, i32 0, i32 1
-  %275 = load double, double* %274, align 8
-  %276 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 1
-  %277 = getelementptr inbounds [3 x float], [3 x float]* %276, i64 0, i64 1
-  %278 = load float, float* %277, align 4
-  %279 = fpext float %278 to double
-  %280 = fmul double %275, %279
-  %281 = fadd double %272, %280
-  %282 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
-  %283 = getelementptr inbounds %struct.vec3, %struct.vec3* %282, i32 0, i32 2
-  %284 = load double, double* %283, align 8
-  %285 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 1
-  %286 = getelementptr inbounds [3 x float], [3 x float]* %285, i64 0, i64 2
-  %287 = load float, float* %286, align 4
-  %288 = fpext float %287 to double
-  %289 = fmul double %284, %288
-  %290 = fadd double %281, %289
-  %291 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 0, i32 1), align 8
-  %292 = fadd double %290, %291
-  %293 = getelementptr inbounds %struct.vec3, %struct.vec3* %14, i32 0, i32 1
-  store double %292, double* %293, align 8
-  %294 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
-  %295 = getelementptr inbounds %struct.vec3, %struct.vec3* %294, i32 0, i32 0
-  %296 = load double, double* %295, align 8
-  %297 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 2
-  %298 = getelementptr inbounds [3 x float], [3 x float]* %297, i64 0, i64 0
-  %299 = load float, float* %298, align 8
-  %300 = fpext float %299 to double
-  %301 = fmul double %296, %300
-  %302 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
-  %303 = getelementptr inbounds %struct.vec3, %struct.vec3* %302, i32 0, i32 1
-  %304 = load double, double* %303, align 8
-  %305 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 2
-  %306 = getelementptr inbounds [3 x float], [3 x float]* %305, i64 0, i64 1
-  %307 = load float, float* %306, align 4
-  %308 = fpext float %307 to double
-  %309 = fmul double %304, %308
-  %310 = fadd double %301, %309
-  %311 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
-  %312 = getelementptr inbounds %struct.vec3, %struct.vec3* %311, i32 0, i32 2
-  %313 = load double, double* %312, align 8
-  %314 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %9, i64 0, i64 2
-  %315 = getelementptr inbounds [3 x float], [3 x float]* %314, i64 0, i64 2
-  %316 = load float, float* %315, align 8
-  %317 = fpext float %316 to double
-  %318 = fmul double %313, %317
-  %319 = fadd double %310, %318
-  %320 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 0, i32 2), align 8
-  %321 = fadd double %319, %320
-  %322 = getelementptr inbounds %struct.vec3, %struct.vec3* %14, i32 0, i32 2
-  store double %321, double* %322, align 8
-  %323 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 0
-  %324 = bitcast %struct.vec3* %323 to i8*
-  %325 = bitcast %struct.vec3* %14 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %324, i8* align 8 %325, i64 24, i1 false)
-  %326 = getelementptr inbounds %struct.vec3, %struct.vec3* %15, i32 0, i32 0
-  %327 = load double, double* %326, align 8
-  %328 = getelementptr inbounds %struct.vec3, %struct.vec3* %14, i32 0, i32 0
-  %329 = load double, double* %328, align 8
-  %330 = fadd double %327, %329
-  %331 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 1
-  %332 = getelementptr inbounds %struct.vec3, %struct.vec3* %331, i32 0, i32 0
-  store double %330, double* %332, align 8
-  %333 = getelementptr inbounds %struct.vec3, %struct.vec3* %15, i32 0, i32 1
-  %334 = load double, double* %333, align 8
-  %335 = getelementptr inbounds %struct.vec3, %struct.vec3* %14, i32 0, i32 1
-  %336 = load double, double* %335, align 8
-  %337 = fadd double %334, %336
-  %338 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 1
-  %339 = getelementptr inbounds %struct.vec3, %struct.vec3* %338, i32 0, i32 1
-  store double %337, double* %339, align 8
-  %340 = getelementptr inbounds %struct.vec3, %struct.vec3* %15, i32 0, i32 2
-  %341 = load double, double* %340, align 8
-  %342 = getelementptr inbounds %struct.vec3, %struct.vec3* %14, i32 0, i32 2
-  %343 = load double, double* %342, align 8
-  %344 = fadd double %341, %343
-  %345 = getelementptr inbounds %struct.ray, %struct.ray* %8, i32 0, i32 1
-  %346 = getelementptr inbounds %struct.vec3, %struct.vec3* %345, i32 0, i32 2
-  store double %344, double* %346, align 8
-  %347 = bitcast %struct.ray* %0 to i8*
-  %348 = bitcast %struct.ray* %8 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %347, i8* align 8 %348, i64 48, i1 false)
+; <label>:63:                                     ; preds = %32
+  call void @cross_product(%struct.vec3* sret %16, %struct.vec3* byval align 8 %10, %struct.vec3* byval align 8 %11)
+  %64 = bitcast %struct.vec3* %9 to i8*
+  %65 = bitcast %struct.vec3* %16 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %64, i8* align 8 %65, i64 24, i1 false)
+  call void @cross_product(%struct.vec3* sret %17, %struct.vec3* byval align 8 %11, %struct.vec3* byval align 8 %9)
+  %66 = bitcast %struct.vec3* %10 to i8*
+  %67 = bitcast %struct.vec3* %17 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %66, i8* align 8 %67, i64 24, i1 false)
+  %68 = getelementptr inbounds %struct.vec3, %struct.vec3* %9, i32 0, i32 0
+  %69 = load double, double* %68, align 8
+  %70 = fptrunc double %69 to float
+  %71 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 0
+  %72 = getelementptr inbounds [3 x float], [3 x float]* %71, i64 0, i64 0
+  store float %70, float* %72, align 16
+  %73 = getelementptr inbounds %struct.vec3, %struct.vec3* %10, i32 0, i32 0
+  %74 = load double, double* %73, align 8
+  %75 = fptrunc double %74 to float
+  %76 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 0
+  %77 = getelementptr inbounds [3 x float], [3 x float]* %76, i64 0, i64 1
+  store float %75, float* %77, align 4
+  %78 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 0
+  %79 = load double, double* %78, align 8
+  %80 = fptrunc double %79 to float
+  %81 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 0
+  %82 = getelementptr inbounds [3 x float], [3 x float]* %81, i64 0, i64 2
+  store float %80, float* %82, align 8
+  %83 = getelementptr inbounds %struct.vec3, %struct.vec3* %9, i32 0, i32 1
+  %84 = load double, double* %83, align 8
+  %85 = fptrunc double %84 to float
+  %86 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 1
+  %87 = getelementptr inbounds [3 x float], [3 x float]* %86, i64 0, i64 0
+  store float %85, float* %87, align 4
+  %88 = getelementptr inbounds %struct.vec3, %struct.vec3* %10, i32 0, i32 1
+  %89 = load double, double* %88, align 8
+  %90 = fptrunc double %89 to float
+  %91 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 1
+  %92 = getelementptr inbounds [3 x float], [3 x float]* %91, i64 0, i64 1
+  store float %90, float* %92, align 4
+  %93 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 1
+  %94 = load double, double* %93, align 8
+  %95 = fptrunc double %94 to float
+  %96 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 1
+  %97 = getelementptr inbounds [3 x float], [3 x float]* %96, i64 0, i64 2
+  store float %95, float* %97, align 4
+  %98 = getelementptr inbounds %struct.vec3, %struct.vec3* %9, i32 0, i32 2
+  %99 = load double, double* %98, align 8
+  %100 = fptrunc double %99 to float
+  %101 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 2
+  %102 = getelementptr inbounds [3 x float], [3 x float]* %101, i64 0, i64 0
+  store float %100, float* %102, align 8
+  %103 = getelementptr inbounds %struct.vec3, %struct.vec3* %10, i32 0, i32 2
+  %104 = load double, double* %103, align 8
+  %105 = fptrunc double %104 to float
+  %106 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 2
+  %107 = getelementptr inbounds [3 x float], [3 x float]* %106, i64 0, i64 1
+  store float %105, float* %107, align 4
+  %108 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 2
+  %109 = load double, double* %108, align 8
+  %110 = fptrunc double %109 to float
+  %111 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 2
+  %112 = getelementptr inbounds [3 x float], [3 x float]* %111, i64 0, i64 2
+  store float %110, float* %112, align 8
+  %113 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 0
+  %114 = getelementptr inbounds %struct.vec3, %struct.vec3* %113, i32 0, i32 2
+  store double 0.000000e+00, double* %114, align 8
+  %115 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 0
+  %116 = getelementptr inbounds %struct.vec3, %struct.vec3* %115, i32 0, i32 1
+  store double 0.000000e+00, double* %116, align 8
+  %117 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 0
+  %118 = getelementptr inbounds %struct.vec3, %struct.vec3* %117, i32 0, i32 0
+  store double 0.000000e+00, double* %118, align 8
+  %119 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 1
+  %120 = load i32, i32* %5, align 4
+  %121 = load i32, i32* %6, align 4
+  %122 = load i32, i32* %7, align 4
+  call void @get_sample_pos(%struct.vec3* sret %18, i32 %120, i32 %121, i32 %122)
+  %123 = bitcast %struct.vec3* %119 to i8*
+  %124 = bitcast %struct.vec3* %18 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %123, i8* align 8 %124, i64 24, i1 false)
+  %125 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 1
+  %126 = getelementptr inbounds %struct.vec3, %struct.vec3* %125, i32 0, i32 2
+  store double 0x40045F306F4445A0, double* %126, align 8
+  %127 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 1
+  %128 = getelementptr inbounds %struct.vec3, %struct.vec3* %127, i32 0, i32 0
+  %129 = load double, double* %128, align 8
+  %130 = fmul double %129, 1.000000e+03
+  store double %130, double* %128, align 8
+  %131 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 1
+  %132 = getelementptr inbounds %struct.vec3, %struct.vec3* %131, i32 0, i32 1
+  %133 = load double, double* %132, align 8
+  %134 = fmul double %133, 1.000000e+03
+  store double %134, double* %132, align 8
+  %135 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 1
+  %136 = getelementptr inbounds %struct.vec3, %struct.vec3* %135, i32 0, i32 2
+  %137 = load double, double* %136, align 8
+  %138 = fmul double %137, 1.000000e+03
+  store double %138, double* %136, align 8
+  %139 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 1
+  %140 = getelementptr inbounds %struct.vec3, %struct.vec3* %139, i32 0, i32 0
+  %141 = load double, double* %140, align 8
+  %142 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 0
+  %143 = getelementptr inbounds %struct.vec3, %struct.vec3* %142, i32 0, i32 0
+  %144 = load double, double* %143, align 8
+  %145 = fadd double %141, %144
+  %146 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
+  store double %145, double* %146, align 8
+  %147 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 1
+  %148 = getelementptr inbounds %struct.vec3, %struct.vec3* %147, i32 0, i32 1
+  %149 = load double, double* %148, align 8
+  %150 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 0
+  %151 = getelementptr inbounds %struct.vec3, %struct.vec3* %150, i32 0, i32 1
+  %152 = load double, double* %151, align 8
+  %153 = fadd double %149, %152
+  %154 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
+  store double %153, double* %154, align 8
+  %155 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 1
+  %156 = getelementptr inbounds %struct.vec3, %struct.vec3* %155, i32 0, i32 2
+  %157 = load double, double* %156, align 8
+  %158 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 0
+  %159 = getelementptr inbounds %struct.vec3, %struct.vec3* %158, i32 0, i32 2
+  %160 = load double, double* %159, align 8
+  %161 = fadd double %157, %160
+  %162 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
+  store double %161, double* %162, align 8
+  %163 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
+  %164 = load double, double* %163, align 8
+  %165 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 0
+  %166 = getelementptr inbounds [3 x float], [3 x float]* %165, i64 0, i64 0
+  %167 = load float, float* %166, align 16
+  %168 = fpext float %167 to double
+  %169 = fmul double %164, %168
+  %170 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
+  %171 = load double, double* %170, align 8
+  %172 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 0
+  %173 = getelementptr inbounds [3 x float], [3 x float]* %172, i64 0, i64 1
+  %174 = load float, float* %173, align 4
+  %175 = fpext float %174 to double
+  %176 = fmul double %171, %175
+  %177 = fadd double %169, %176
+  %178 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
+  %179 = load double, double* %178, align 8
+  %180 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 0
+  %181 = getelementptr inbounds [3 x float], [3 x float]* %180, i64 0, i64 2
+  %182 = load float, float* %181, align 8
+  %183 = fpext float %182 to double
+  %184 = fmul double %179, %183
+  %185 = fadd double %177, %184
+  %186 = getelementptr inbounds %struct.vec3, %struct.vec3* %14, i32 0, i32 0
+  store double %185, double* %186, align 8
+  %187 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
+  %188 = load double, double* %187, align 8
+  %189 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 1
+  %190 = getelementptr inbounds [3 x float], [3 x float]* %189, i64 0, i64 0
+  %191 = load float, float* %190, align 4
+  %192 = fpext float %191 to double
+  %193 = fmul double %188, %192
+  %194 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
+  %195 = load double, double* %194, align 8
+  %196 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 1
+  %197 = getelementptr inbounds [3 x float], [3 x float]* %196, i64 0, i64 1
+  %198 = load float, float* %197, align 4
+  %199 = fpext float %198 to double
+  %200 = fmul double %195, %199
+  %201 = fadd double %193, %200
+  %202 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
+  %203 = load double, double* %202, align 8
+  %204 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 1
+  %205 = getelementptr inbounds [3 x float], [3 x float]* %204, i64 0, i64 2
+  %206 = load float, float* %205, align 4
+  %207 = fpext float %206 to double
+  %208 = fmul double %203, %207
+  %209 = fadd double %201, %208
+  %210 = getelementptr inbounds %struct.vec3, %struct.vec3* %14, i32 0, i32 1
+  store double %209, double* %210, align 8
+  %211 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
+  %212 = load double, double* %211, align 8
+  %213 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 2
+  %214 = getelementptr inbounds [3 x float], [3 x float]* %213, i64 0, i64 0
+  %215 = load float, float* %214, align 8
+  %216 = fpext float %215 to double
+  %217 = fmul double %212, %216
+  %218 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
+  %219 = load double, double* %218, align 8
+  %220 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 2
+  %221 = getelementptr inbounds [3 x float], [3 x float]* %220, i64 0, i64 1
+  %222 = load float, float* %221, align 4
+  %223 = fpext float %222 to double
+  %224 = fmul double %219, %223
+  %225 = fadd double %217, %224
+  %226 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
+  %227 = load double, double* %226, align 8
+  %228 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 2
+  %229 = getelementptr inbounds [3 x float], [3 x float]* %228, i64 0, i64 2
+  %230 = load float, float* %229, align 8
+  %231 = fpext float %230 to double
+  %232 = fmul double %227, %231
+  %233 = fadd double %225, %232
+  %234 = getelementptr inbounds %struct.vec3, %struct.vec3* %14, i32 0, i32 2
+  store double %233, double* %234, align 8
+  %235 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 0
+  %236 = getelementptr inbounds %struct.vec3, %struct.vec3* %235, i32 0, i32 0
+  %237 = load double, double* %236, align 8
+  %238 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 0
+  %239 = getelementptr inbounds [3 x float], [3 x float]* %238, i64 0, i64 0
+  %240 = load float, float* %239, align 16
+  %241 = fpext float %240 to double
+  %242 = fmul double %237, %241
+  %243 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 0
+  %244 = getelementptr inbounds %struct.vec3, %struct.vec3* %243, i32 0, i32 1
+  %245 = load double, double* %244, align 8
+  %246 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 0
+  %247 = getelementptr inbounds [3 x float], [3 x float]* %246, i64 0, i64 1
+  %248 = load float, float* %247, align 4
+  %249 = fpext float %248 to double
+  %250 = fmul double %245, %249
+  %251 = fadd double %242, %250
+  %252 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 0
+  %253 = getelementptr inbounds %struct.vec3, %struct.vec3* %252, i32 0, i32 2
+  %254 = load double, double* %253, align 8
+  %255 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 0
+  %256 = getelementptr inbounds [3 x float], [3 x float]* %255, i64 0, i64 2
+  %257 = load float, float* %256, align 8
+  %258 = fpext float %257 to double
+  %259 = fmul double %254, %258
+  %260 = fadd double %251, %259
+  %261 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 0, i32 0), align 8
+  %262 = fadd double %260, %261
+  %263 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 0
+  store double %262, double* %263, align 8
+  %264 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 0
+  %265 = getelementptr inbounds %struct.vec3, %struct.vec3* %264, i32 0, i32 0
+  %266 = load double, double* %265, align 8
+  %267 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 1
+  %268 = getelementptr inbounds [3 x float], [3 x float]* %267, i64 0, i64 0
+  %269 = load float, float* %268, align 4
+  %270 = fpext float %269 to double
+  %271 = fmul double %266, %270
+  %272 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 0
+  %273 = getelementptr inbounds %struct.vec3, %struct.vec3* %272, i32 0, i32 1
+  %274 = load double, double* %273, align 8
+  %275 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 1
+  %276 = getelementptr inbounds [3 x float], [3 x float]* %275, i64 0, i64 1
+  %277 = load float, float* %276, align 4
+  %278 = fpext float %277 to double
+  %279 = fmul double %274, %278
+  %280 = fadd double %271, %279
+  %281 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 0
+  %282 = getelementptr inbounds %struct.vec3, %struct.vec3* %281, i32 0, i32 2
+  %283 = load double, double* %282, align 8
+  %284 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 1
+  %285 = getelementptr inbounds [3 x float], [3 x float]* %284, i64 0, i64 2
+  %286 = load float, float* %285, align 4
+  %287 = fpext float %286 to double
+  %288 = fmul double %283, %287
+  %289 = fadd double %280, %288
+  %290 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 0, i32 1), align 8
+  %291 = fadd double %289, %290
+  %292 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 1
+  store double %291, double* %292, align 8
+  %293 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 0
+  %294 = getelementptr inbounds %struct.vec3, %struct.vec3* %293, i32 0, i32 0
+  %295 = load double, double* %294, align 8
+  %296 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 2
+  %297 = getelementptr inbounds [3 x float], [3 x float]* %296, i64 0, i64 0
+  %298 = load float, float* %297, align 8
+  %299 = fpext float %298 to double
+  %300 = fmul double %295, %299
+  %301 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 0
+  %302 = getelementptr inbounds %struct.vec3, %struct.vec3* %301, i32 0, i32 1
+  %303 = load double, double* %302, align 8
+  %304 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 2
+  %305 = getelementptr inbounds [3 x float], [3 x float]* %304, i64 0, i64 1
+  %306 = load float, float* %305, align 4
+  %307 = fpext float %306 to double
+  %308 = fmul double %303, %307
+  %309 = fadd double %300, %308
+  %310 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 0
+  %311 = getelementptr inbounds %struct.vec3, %struct.vec3* %310, i32 0, i32 2
+  %312 = load double, double* %311, align 8
+  %313 = getelementptr inbounds [3 x [3 x float]], [3 x [3 x float]]* %8, i64 0, i64 2
+  %314 = getelementptr inbounds [3 x float], [3 x float]* %313, i64 0, i64 2
+  %315 = load float, float* %314, align 8
+  %316 = fpext float %315 to double
+  %317 = fmul double %312, %316
+  %318 = fadd double %309, %317
+  %319 = load double, double* getelementptr inbounds (%struct.camera, %struct.camera* @cam, i32 0, i32 0, i32 2), align 8
+  %320 = fadd double %318, %319
+  %321 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 2
+  store double %320, double* %321, align 8
+  %322 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 0
+  %323 = bitcast %struct.vec3* %322 to i8*
+  %324 = bitcast %struct.vec3* %13 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %323, i8* align 8 %324, i64 24, i1 false)
+  %325 = getelementptr inbounds %struct.vec3, %struct.vec3* %14, i32 0, i32 0
+  %326 = load double, double* %325, align 8
+  %327 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 0
+  %328 = load double, double* %327, align 8
+  %329 = fadd double %326, %328
+  %330 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 1
+  %331 = getelementptr inbounds %struct.vec3, %struct.vec3* %330, i32 0, i32 0
+  store double %329, double* %331, align 8
+  %332 = getelementptr inbounds %struct.vec3, %struct.vec3* %14, i32 0, i32 1
+  %333 = load double, double* %332, align 8
+  %334 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 1
+  %335 = load double, double* %334, align 8
+  %336 = fadd double %333, %335
+  %337 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 1
+  %338 = getelementptr inbounds %struct.vec3, %struct.vec3* %337, i32 0, i32 1
+  store double %336, double* %338, align 8
+  %339 = getelementptr inbounds %struct.vec3, %struct.vec3* %14, i32 0, i32 2
+  %340 = load double, double* %339, align 8
+  %341 = getelementptr inbounds %struct.vec3, %struct.vec3* %13, i32 0, i32 2
+  %342 = load double, double* %341, align 8
+  %343 = fadd double %340, %342
+  %344 = getelementptr inbounds %struct.ray, %struct.ray* %0, i32 0, i32 1
+  %345 = getelementptr inbounds %struct.vec3, %struct.vec3* %344, i32 0, i32 2
+  store double %343, double* %345, align 8
   ret void
 }
 
 ; Function Attrs: noinline nounwind optnone uwtable
-define i32 @ray_sphere(%struct.sphere*, %struct.ray* byval align 8, %struct.spoint*) #0 {
+define dso_local i32 @ray_sphere(%struct.sphere*, %struct.ray* byval align 8, %struct.spoint*) #0 {
   %4 = alloca i32, align 4
   %5 = alloca %struct.sphere*, align 8
   %6 = alloca %struct.spoint*, align 8
@@ -1729,704 +1718,684 @@ define i32 @ray_sphere(%struct.sphere*, %struct.ray* byval align 8, %struct.spoi
   ret i32 %383
 }
 
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1) #3
+
 ; Function Attrs: noinline nounwind optnone uwtable
-define void @shade(%struct.vec3* noalias sret, %struct.sphere*, %struct.spoint*, i32) #0 {
+define dso_local void @shade(%struct.vec3* noalias sret, %struct.sphere*, %struct.spoint*, i32) #0 {
   %5 = alloca %struct.sphere*, align 8
   %6 = alloca %struct.spoint*, align 8
   %7 = alloca i32, align 4
   %8 = alloca i32, align 4
-  %9 = alloca %struct.vec3, align 8
+  %9 = alloca double, align 8
   %10 = alloca double, align 8
-  %11 = alloca double, align 8
-  %12 = alloca %struct.vec3, align 8
-  %13 = alloca %struct.ray, align 8
-  %14 = alloca %struct.sphere*, align 8
-  %15 = alloca i32, align 4
-  %16 = alloca double, align 8
-  %17 = alloca %struct.ray, align 8
+  %11 = alloca %struct.vec3, align 8
+  %12 = alloca %struct.ray, align 8
+  %13 = alloca %struct.sphere*, align 8
+  %14 = alloca i32, align 4
+  %15 = alloca double, align 8
+  %16 = alloca %struct.ray, align 8
+  %17 = alloca %struct.vec3, align 8
   %18 = alloca %struct.vec3, align 8
-  %19 = alloca %struct.vec3, align 8
   store %struct.sphere* %1, %struct.sphere** %5, align 8
   store %struct.spoint* %2, %struct.spoint** %6, align 8
   store i32 %3, i32* %7, align 4
-  %20 = bitcast %struct.vec3* %9 to i8*
-  call void @llvm.memset.p0i8.i64(i8* align 8 %20, i8 0, i64 24, i1 false)
+  %19 = bitcast %struct.vec3* %0 to i8*
+  call void @llvm.memset.p0i8.i64(i8* align 8 %19, i8 0, i64 24, i1 false)
   store i32 0, i32* %8, align 4
-  br label %21
+  br label %20
 
-; <label>:21:                                     ; preds = %271, %4
-  %22 = load i32, i32* %8, align 4
-  %23 = load i32, i32* @lnum, align 4
-  %24 = icmp slt i32 %22, %23
-  br i1 %24, label %25, label %274
+; <label>:20:                                     ; preds = %270, %4
+  %21 = load i32, i32* %8, align 4
+  %22 = load i32, i32* @lnum, align 4
+  %23 = icmp slt i32 %21, %22
+  br i1 %23, label %24, label %273
 
-; <label>:25:                                     ; preds = %21
-  %26 = load %struct.sphere*, %struct.sphere** @obj_list, align 8
-  %27 = getelementptr inbounds %struct.sphere, %struct.sphere* %26, i32 0, i32 3
-  %28 = load %struct.sphere*, %struct.sphere** %27, align 8
-  store %struct.sphere* %28, %struct.sphere** %14, align 8
-  store i32 0, i32* %15, align 4
-  %29 = load i32, i32* %8, align 4
-  %30 = sext i32 %29 to i64
-  %31 = getelementptr inbounds [16 x %struct.vec3], [16 x %struct.vec3]* @lights, i64 0, i64 %30
-  %32 = getelementptr inbounds %struct.vec3, %struct.vec3* %31, i32 0, i32 0
-  %33 = load double, double* %32, align 8
-  %34 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %35 = getelementptr inbounds %struct.spoint, %struct.spoint* %34, i32 0, i32 0
-  %36 = getelementptr inbounds %struct.vec3, %struct.vec3* %35, i32 0, i32 0
-  %37 = load double, double* %36, align 8
-  %38 = fsub double %33, %37
-  %39 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
-  store double %38, double* %39, align 8
-  %40 = load i32, i32* %8, align 4
-  %41 = sext i32 %40 to i64
-  %42 = getelementptr inbounds [16 x %struct.vec3], [16 x %struct.vec3]* @lights, i64 0, i64 %41
-  %43 = getelementptr inbounds %struct.vec3, %struct.vec3* %42, i32 0, i32 1
-  %44 = load double, double* %43, align 8
-  %45 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %46 = getelementptr inbounds %struct.spoint, %struct.spoint* %45, i32 0, i32 0
-  %47 = getelementptr inbounds %struct.vec3, %struct.vec3* %46, i32 0, i32 1
-  %48 = load double, double* %47, align 8
-  %49 = fsub double %44, %48
-  %50 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
-  store double %49, double* %50, align 8
-  %51 = load i32, i32* %8, align 4
-  %52 = sext i32 %51 to i64
-  %53 = getelementptr inbounds [16 x %struct.vec3], [16 x %struct.vec3]* @lights, i64 0, i64 %52
-  %54 = getelementptr inbounds %struct.vec3, %struct.vec3* %53, i32 0, i32 2
-  %55 = load double, double* %54, align 8
-  %56 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %57 = getelementptr inbounds %struct.spoint, %struct.spoint* %56, i32 0, i32 0
-  %58 = getelementptr inbounds %struct.vec3, %struct.vec3* %57, i32 0, i32 2
-  %59 = load double, double* %58, align 8
-  %60 = fsub double %55, %59
-  %61 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
-  store double %60, double* %61, align 8
-  %62 = getelementptr inbounds %struct.ray, %struct.ray* %13, i32 0, i32 0
-  %63 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %64 = getelementptr inbounds %struct.spoint, %struct.spoint* %63, i32 0, i32 0
-  %65 = bitcast %struct.vec3* %62 to i8*
-  %66 = bitcast %struct.vec3* %64 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %65, i8* align 8 %66, i64 24, i1 false)
-  %67 = getelementptr inbounds %struct.ray, %struct.ray* %13, i32 0, i32 1
-  %68 = bitcast %struct.vec3* %67 to i8*
-  %69 = bitcast %struct.vec3* %12 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %68, i8* align 8 %69, i64 24, i1 false)
-  br label %70
+; <label>:24:                                     ; preds = %20
+  %25 = load %struct.sphere*, %struct.sphere** @obj_list, align 8
+  %26 = getelementptr inbounds %struct.sphere, %struct.sphere* %25, i32 0, i32 3
+  %27 = load %struct.sphere*, %struct.sphere** %26, align 8
+  store %struct.sphere* %27, %struct.sphere** %13, align 8
+  store i32 0, i32* %14, align 4
+  %28 = load i32, i32* %8, align 4
+  %29 = sext i32 %28 to i64
+  %30 = getelementptr inbounds [16 x %struct.vec3], [16 x %struct.vec3]* @lights, i64 0, i64 %29
+  %31 = getelementptr inbounds %struct.vec3, %struct.vec3* %30, i32 0, i32 0
+  %32 = load double, double* %31, align 8
+  %33 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %34 = getelementptr inbounds %struct.spoint, %struct.spoint* %33, i32 0, i32 0
+  %35 = getelementptr inbounds %struct.vec3, %struct.vec3* %34, i32 0, i32 0
+  %36 = load double, double* %35, align 8
+  %37 = fsub double %32, %36
+  %38 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 0
+  store double %37, double* %38, align 8
+  %39 = load i32, i32* %8, align 4
+  %40 = sext i32 %39 to i64
+  %41 = getelementptr inbounds [16 x %struct.vec3], [16 x %struct.vec3]* @lights, i64 0, i64 %40
+  %42 = getelementptr inbounds %struct.vec3, %struct.vec3* %41, i32 0, i32 1
+  %43 = load double, double* %42, align 8
+  %44 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %45 = getelementptr inbounds %struct.spoint, %struct.spoint* %44, i32 0, i32 0
+  %46 = getelementptr inbounds %struct.vec3, %struct.vec3* %45, i32 0, i32 1
+  %47 = load double, double* %46, align 8
+  %48 = fsub double %43, %47
+  %49 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 1
+  store double %48, double* %49, align 8
+  %50 = load i32, i32* %8, align 4
+  %51 = sext i32 %50 to i64
+  %52 = getelementptr inbounds [16 x %struct.vec3], [16 x %struct.vec3]* @lights, i64 0, i64 %51
+  %53 = getelementptr inbounds %struct.vec3, %struct.vec3* %52, i32 0, i32 2
+  %54 = load double, double* %53, align 8
+  %55 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %56 = getelementptr inbounds %struct.spoint, %struct.spoint* %55, i32 0, i32 0
+  %57 = getelementptr inbounds %struct.vec3, %struct.vec3* %56, i32 0, i32 2
+  %58 = load double, double* %57, align 8
+  %59 = fsub double %54, %58
+  %60 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 2
+  store double %59, double* %60, align 8
+  %61 = getelementptr inbounds %struct.ray, %struct.ray* %12, i32 0, i32 0
+  %62 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %63 = getelementptr inbounds %struct.spoint, %struct.spoint* %62, i32 0, i32 0
+  %64 = bitcast %struct.vec3* %61 to i8*
+  %65 = bitcast %struct.vec3* %63 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %64, i8* align 8 %65, i64 24, i1 false)
+  %66 = getelementptr inbounds %struct.ray, %struct.ray* %12, i32 0, i32 1
+  %67 = bitcast %struct.vec3* %66 to i8*
+  %68 = bitcast %struct.vec3* %11 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %67, i8* align 8 %68, i64 24, i1 false)
+  br label %69
 
-; <label>:70:                                     ; preds = %78, %25
-  %71 = load %struct.sphere*, %struct.sphere** %14, align 8
-  %72 = icmp ne %struct.sphere* %71, null
-  br i1 %72, label %73, label %82
+; <label>:69:                                     ; preds = %77, %24
+  %70 = load %struct.sphere*, %struct.sphere** %13, align 8
+  %71 = icmp ne %struct.sphere* %70, null
+  br i1 %71, label %72, label %81
 
-; <label>:73:                                     ; preds = %70
-  %74 = load %struct.sphere*, %struct.sphere** %14, align 8
-  %75 = call i32 @ray_sphere(%struct.sphere* %74, %struct.ray* byval align 8 %13, %struct.spoint* null)
-  %76 = icmp ne i32 %75, 0
-  br i1 %76, label %77, label %78
+; <label>:72:                                     ; preds = %69
+  %73 = load %struct.sphere*, %struct.sphere** %13, align 8
+  %74 = call i32 @ray_sphere(%struct.sphere* %73, %struct.ray* byval align 8 %12, %struct.spoint* null)
+  %75 = icmp ne i32 %74, 0
+  br i1 %75, label %76, label %77
 
-; <label>:77:                                     ; preds = %73
-  store i32 1, i32* %15, align 4
-  br label %82
+; <label>:76:                                     ; preds = %72
+  store i32 1, i32* %14, align 4
+  br label %81
 
-; <label>:78:                                     ; preds = %73
-  %79 = load %struct.sphere*, %struct.sphere** %14, align 8
-  %80 = getelementptr inbounds %struct.sphere, %struct.sphere* %79, i32 0, i32 3
-  %81 = load %struct.sphere*, %struct.sphere** %80, align 8
-  store %struct.sphere* %81, %struct.sphere** %14, align 8
-  br label %70
+; <label>:77:                                     ; preds = %72
+  %78 = load %struct.sphere*, %struct.sphere** %13, align 8
+  %79 = getelementptr inbounds %struct.sphere, %struct.sphere* %78, i32 0, i32 3
+  %80 = load %struct.sphere*, %struct.sphere** %79, align 8
+  store %struct.sphere* %80, %struct.sphere** %13, align 8
+  br label %69
 
-; <label>:82:                                     ; preds = %77, %70
-  %83 = load i32, i32* %15, align 4
-  %84 = icmp ne i32 %83, 0
-  br i1 %84, label %270, label %85
+; <label>:81:                                     ; preds = %76, %69
+  %82 = load i32, i32* %14, align 4
+  %83 = icmp ne i32 %82, 0
+  br i1 %83, label %269, label %84
 
-; <label>:85:                                     ; preds = %82
-  br label %86
+; <label>:84:                                     ; preds = %81
+  br label %85
 
-; <label>:86:                                     ; preds = %85
-  %87 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
-  %88 = load double, double* %87, align 8
-  %89 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
-  %90 = load double, double* %89, align 8
-  %91 = fmul double %88, %90
-  %92 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
-  %93 = load double, double* %92, align 8
-  %94 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
-  %95 = load double, double* %94, align 8
-  %96 = fmul double %93, %95
-  %97 = fadd double %91, %96
-  %98 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
-  %99 = load double, double* %98, align 8
-  %100 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
-  %101 = load double, double* %100, align 8
-  %102 = fmul double %99, %101
-  %103 = fadd double %97, %102
-  %104 = call double @sqrt(double %103) #5
-  store double %104, double* %16, align 8
-  %105 = load double, double* %16, align 8
-  %106 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
-  %107 = load double, double* %106, align 8
-  %108 = fdiv double %107, %105
-  store double %108, double* %106, align 8
-  %109 = load double, double* %16, align 8
-  %110 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
-  %111 = load double, double* %110, align 8
-  %112 = fdiv double %111, %109
-  store double %112, double* %110, align 8
-  %113 = load double, double* %16, align 8
-  %114 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
-  %115 = load double, double* %114, align 8
-  %116 = fdiv double %115, %113
-  store double %116, double* %114, align 8
-  br label %117
+; <label>:85:                                     ; preds = %84
+  %86 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 0
+  %87 = load double, double* %86, align 8
+  %88 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 0
+  %89 = load double, double* %88, align 8
+  %90 = fmul double %87, %89
+  %91 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 1
+  %92 = load double, double* %91, align 8
+  %93 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 1
+  %94 = load double, double* %93, align 8
+  %95 = fmul double %92, %94
+  %96 = fadd double %90, %95
+  %97 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 2
+  %98 = load double, double* %97, align 8
+  %99 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 2
+  %100 = load double, double* %99, align 8
+  %101 = fmul double %98, %100
+  %102 = fadd double %96, %101
+  %103 = call double @sqrt(double %102) #5
+  store double %103, double* %15, align 8
+  %104 = load double, double* %15, align 8
+  %105 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 0
+  %106 = load double, double* %105, align 8
+  %107 = fdiv double %106, %104
+  store double %107, double* %105, align 8
+  %108 = load double, double* %15, align 8
+  %109 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 1
+  %110 = load double, double* %109, align 8
+  %111 = fdiv double %110, %108
+  store double %111, double* %109, align 8
+  %112 = load double, double* %15, align 8
+  %113 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 2
+  %114 = load double, double* %113, align 8
+  %115 = fdiv double %114, %112
+  store double %115, double* %113, align 8
+  br label %116
 
-; <label>:117:                                    ; preds = %86
-  %118 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %119 = getelementptr inbounds %struct.spoint, %struct.spoint* %118, i32 0, i32 1
-  %120 = getelementptr inbounds %struct.vec3, %struct.vec3* %119, i32 0, i32 0
-  %121 = load double, double* %120, align 8
-  %122 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
-  %123 = load double, double* %122, align 8
-  %124 = fmul double %121, %123
-  %125 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %126 = getelementptr inbounds %struct.spoint, %struct.spoint* %125, i32 0, i32 1
-  %127 = getelementptr inbounds %struct.vec3, %struct.vec3* %126, i32 0, i32 1
-  %128 = load double, double* %127, align 8
-  %129 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
-  %130 = load double, double* %129, align 8
-  %131 = fmul double %128, %130
-  %132 = fadd double %124, %131
-  %133 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %134 = getelementptr inbounds %struct.spoint, %struct.spoint* %133, i32 0, i32 1
-  %135 = getelementptr inbounds %struct.vec3, %struct.vec3* %134, i32 0, i32 2
-  %136 = load double, double* %135, align 8
-  %137 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
-  %138 = load double, double* %137, align 8
-  %139 = fmul double %136, %138
-  %140 = fadd double %132, %139
-  %141 = fcmp ogt double %140, 0.000000e+00
-  br i1 %141, label %142, label %166
+; <label>:116:                                    ; preds = %85
+  %117 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %118 = getelementptr inbounds %struct.spoint, %struct.spoint* %117, i32 0, i32 1
+  %119 = getelementptr inbounds %struct.vec3, %struct.vec3* %118, i32 0, i32 0
+  %120 = load double, double* %119, align 8
+  %121 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 0
+  %122 = load double, double* %121, align 8
+  %123 = fmul double %120, %122
+  %124 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %125 = getelementptr inbounds %struct.spoint, %struct.spoint* %124, i32 0, i32 1
+  %126 = getelementptr inbounds %struct.vec3, %struct.vec3* %125, i32 0, i32 1
+  %127 = load double, double* %126, align 8
+  %128 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 1
+  %129 = load double, double* %128, align 8
+  %130 = fmul double %127, %129
+  %131 = fadd double %123, %130
+  %132 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %133 = getelementptr inbounds %struct.spoint, %struct.spoint* %132, i32 0, i32 1
+  %134 = getelementptr inbounds %struct.vec3, %struct.vec3* %133, i32 0, i32 2
+  %135 = load double, double* %134, align 8
+  %136 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 2
+  %137 = load double, double* %136, align 8
+  %138 = fmul double %135, %137
+  %139 = fadd double %131, %138
+  %140 = fcmp ogt double %139, 0.000000e+00
+  br i1 %140, label %141, label %165
 
-; <label>:142:                                    ; preds = %117
-  %143 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %144 = getelementptr inbounds %struct.spoint, %struct.spoint* %143, i32 0, i32 1
-  %145 = getelementptr inbounds %struct.vec3, %struct.vec3* %144, i32 0, i32 0
-  %146 = load double, double* %145, align 8
-  %147 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
-  %148 = load double, double* %147, align 8
-  %149 = fmul double %146, %148
-  %150 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %151 = getelementptr inbounds %struct.spoint, %struct.spoint* %150, i32 0, i32 1
-  %152 = getelementptr inbounds %struct.vec3, %struct.vec3* %151, i32 0, i32 1
-  %153 = load double, double* %152, align 8
-  %154 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
-  %155 = load double, double* %154, align 8
-  %156 = fmul double %153, %155
-  %157 = fadd double %149, %156
-  %158 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %159 = getelementptr inbounds %struct.spoint, %struct.spoint* %158, i32 0, i32 1
-  %160 = getelementptr inbounds %struct.vec3, %struct.vec3* %159, i32 0, i32 2
-  %161 = load double, double* %160, align 8
-  %162 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
-  %163 = load double, double* %162, align 8
-  %164 = fmul double %161, %163
-  %165 = fadd double %157, %164
-  br label %167
+; <label>:141:                                    ; preds = %116
+  %142 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %143 = getelementptr inbounds %struct.spoint, %struct.spoint* %142, i32 0, i32 1
+  %144 = getelementptr inbounds %struct.vec3, %struct.vec3* %143, i32 0, i32 0
+  %145 = load double, double* %144, align 8
+  %146 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 0
+  %147 = load double, double* %146, align 8
+  %148 = fmul double %145, %147
+  %149 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %150 = getelementptr inbounds %struct.spoint, %struct.spoint* %149, i32 0, i32 1
+  %151 = getelementptr inbounds %struct.vec3, %struct.vec3* %150, i32 0, i32 1
+  %152 = load double, double* %151, align 8
+  %153 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 1
+  %154 = load double, double* %153, align 8
+  %155 = fmul double %152, %154
+  %156 = fadd double %148, %155
+  %157 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %158 = getelementptr inbounds %struct.spoint, %struct.spoint* %157, i32 0, i32 1
+  %159 = getelementptr inbounds %struct.vec3, %struct.vec3* %158, i32 0, i32 2
+  %160 = load double, double* %159, align 8
+  %161 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 2
+  %162 = load double, double* %161, align 8
+  %163 = fmul double %160, %162
+  %164 = fadd double %156, %163
+  br label %166
 
-; <label>:166:                                    ; preds = %117
-  br label %167
+; <label>:165:                                    ; preds = %116
+  br label %166
 
-; <label>:167:                                    ; preds = %166, %142
-  %168 = phi double [ %165, %142 ], [ 0.000000e+00, %166 ]
-  store double %168, double* %11, align 8
-  %169 = load %struct.sphere*, %struct.sphere** %5, align 8
-  %170 = getelementptr inbounds %struct.sphere, %struct.sphere* %169, i32 0, i32 2
-  %171 = getelementptr inbounds %struct.material, %struct.material* %170, i32 0, i32 1
-  %172 = load double, double* %171, align 8
-  %173 = fcmp ogt double %172, 0.000000e+00
-  br i1 %173, label %174, label %231
+; <label>:166:                                    ; preds = %165, %141
+  %167 = phi double [ %164, %141 ], [ 0.000000e+00, %165 ]
+  store double %167, double* %10, align 8
+  %168 = load %struct.sphere*, %struct.sphere** %5, align 8
+  %169 = getelementptr inbounds %struct.sphere, %struct.sphere* %168, i32 0, i32 2
+  %170 = getelementptr inbounds %struct.material, %struct.material* %169, i32 0, i32 1
+  %171 = load double, double* %170, align 8
+  %172 = fcmp ogt double %171, 0.000000e+00
+  br i1 %172, label %173, label %230
 
-; <label>:174:                                    ; preds = %167
-  %175 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %176 = getelementptr inbounds %struct.spoint, %struct.spoint* %175, i32 0, i32 2
-  %177 = getelementptr inbounds %struct.vec3, %struct.vec3* %176, i32 0, i32 0
-  %178 = load double, double* %177, align 8
-  %179 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
-  %180 = load double, double* %179, align 8
-  %181 = fmul double %178, %180
-  %182 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %183 = getelementptr inbounds %struct.spoint, %struct.spoint* %182, i32 0, i32 2
-  %184 = getelementptr inbounds %struct.vec3, %struct.vec3* %183, i32 0, i32 1
-  %185 = load double, double* %184, align 8
-  %186 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
-  %187 = load double, double* %186, align 8
-  %188 = fmul double %185, %187
-  %189 = fadd double %181, %188
-  %190 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %191 = getelementptr inbounds %struct.spoint, %struct.spoint* %190, i32 0, i32 2
-  %192 = getelementptr inbounds %struct.vec3, %struct.vec3* %191, i32 0, i32 2
-  %193 = load double, double* %192, align 8
-  %194 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
-  %195 = load double, double* %194, align 8
-  %196 = fmul double %193, %195
-  %197 = fadd double %189, %196
-  %198 = fcmp ogt double %197, 0.000000e+00
-  br i1 %198, label %199, label %223
+; <label>:173:                                    ; preds = %166
+  %174 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %175 = getelementptr inbounds %struct.spoint, %struct.spoint* %174, i32 0, i32 2
+  %176 = getelementptr inbounds %struct.vec3, %struct.vec3* %175, i32 0, i32 0
+  %177 = load double, double* %176, align 8
+  %178 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 0
+  %179 = load double, double* %178, align 8
+  %180 = fmul double %177, %179
+  %181 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %182 = getelementptr inbounds %struct.spoint, %struct.spoint* %181, i32 0, i32 2
+  %183 = getelementptr inbounds %struct.vec3, %struct.vec3* %182, i32 0, i32 1
+  %184 = load double, double* %183, align 8
+  %185 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 1
+  %186 = load double, double* %185, align 8
+  %187 = fmul double %184, %186
+  %188 = fadd double %180, %187
+  %189 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %190 = getelementptr inbounds %struct.spoint, %struct.spoint* %189, i32 0, i32 2
+  %191 = getelementptr inbounds %struct.vec3, %struct.vec3* %190, i32 0, i32 2
+  %192 = load double, double* %191, align 8
+  %193 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 2
+  %194 = load double, double* %193, align 8
+  %195 = fmul double %192, %194
+  %196 = fadd double %188, %195
+  %197 = fcmp ogt double %196, 0.000000e+00
+  br i1 %197, label %198, label %222
 
-; <label>:199:                                    ; preds = %174
-  %200 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %201 = getelementptr inbounds %struct.spoint, %struct.spoint* %200, i32 0, i32 2
-  %202 = getelementptr inbounds %struct.vec3, %struct.vec3* %201, i32 0, i32 0
-  %203 = load double, double* %202, align 8
-  %204 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 0
-  %205 = load double, double* %204, align 8
-  %206 = fmul double %203, %205
-  %207 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %208 = getelementptr inbounds %struct.spoint, %struct.spoint* %207, i32 0, i32 2
-  %209 = getelementptr inbounds %struct.vec3, %struct.vec3* %208, i32 0, i32 1
-  %210 = load double, double* %209, align 8
-  %211 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 1
-  %212 = load double, double* %211, align 8
-  %213 = fmul double %210, %212
-  %214 = fadd double %206, %213
-  %215 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %216 = getelementptr inbounds %struct.spoint, %struct.spoint* %215, i32 0, i32 2
-  %217 = getelementptr inbounds %struct.vec3, %struct.vec3* %216, i32 0, i32 2
-  %218 = load double, double* %217, align 8
-  %219 = getelementptr inbounds %struct.vec3, %struct.vec3* %12, i32 0, i32 2
-  %220 = load double, double* %219, align 8
-  %221 = fmul double %218, %220
-  %222 = fadd double %214, %221
-  br label %224
+; <label>:198:                                    ; preds = %173
+  %199 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %200 = getelementptr inbounds %struct.spoint, %struct.spoint* %199, i32 0, i32 2
+  %201 = getelementptr inbounds %struct.vec3, %struct.vec3* %200, i32 0, i32 0
+  %202 = load double, double* %201, align 8
+  %203 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 0
+  %204 = load double, double* %203, align 8
+  %205 = fmul double %202, %204
+  %206 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %207 = getelementptr inbounds %struct.spoint, %struct.spoint* %206, i32 0, i32 2
+  %208 = getelementptr inbounds %struct.vec3, %struct.vec3* %207, i32 0, i32 1
+  %209 = load double, double* %208, align 8
+  %210 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 1
+  %211 = load double, double* %210, align 8
+  %212 = fmul double %209, %211
+  %213 = fadd double %205, %212
+  %214 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %215 = getelementptr inbounds %struct.spoint, %struct.spoint* %214, i32 0, i32 2
+  %216 = getelementptr inbounds %struct.vec3, %struct.vec3* %215, i32 0, i32 2
+  %217 = load double, double* %216, align 8
+  %218 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 2
+  %219 = load double, double* %218, align 8
+  %220 = fmul double %217, %219
+  %221 = fadd double %213, %220
+  br label %223
 
-; <label>:223:                                    ; preds = %174
-  br label %224
+; <label>:222:                                    ; preds = %173
+  br label %223
 
-; <label>:224:                                    ; preds = %223, %199
-  %225 = phi double [ %222, %199 ], [ 0.000000e+00, %223 ]
-  %226 = load %struct.sphere*, %struct.sphere** %5, align 8
-  %227 = getelementptr inbounds %struct.sphere, %struct.sphere* %226, i32 0, i32 2
-  %228 = getelementptr inbounds %struct.material, %struct.material* %227, i32 0, i32 1
-  %229 = load double, double* %228, align 8
-  %230 = call double @pow(double %225, double %229) #5
-  br label %232
+; <label>:223:                                    ; preds = %222, %198
+  %224 = phi double [ %221, %198 ], [ 0.000000e+00, %222 ]
+  %225 = load %struct.sphere*, %struct.sphere** %5, align 8
+  %226 = getelementptr inbounds %struct.sphere, %struct.sphere* %225, i32 0, i32 2
+  %227 = getelementptr inbounds %struct.material, %struct.material* %226, i32 0, i32 1
+  %228 = load double, double* %227, align 8
+  %229 = call double @pow(double %224, double %228) #5
+  br label %231
 
-; <label>:231:                                    ; preds = %167
-  br label %232
+; <label>:230:                                    ; preds = %166
+  br label %231
 
-; <label>:232:                                    ; preds = %231, %224
-  %233 = phi double [ %230, %224 ], [ 0.000000e+00, %231 ]
-  store double %233, double* %10, align 8
-  %234 = load double, double* %11, align 8
-  %235 = load %struct.sphere*, %struct.sphere** %5, align 8
-  %236 = getelementptr inbounds %struct.sphere, %struct.sphere* %235, i32 0, i32 2
-  %237 = getelementptr inbounds %struct.material, %struct.material* %236, i32 0, i32 0
-  %238 = getelementptr inbounds %struct.vec3, %struct.vec3* %237, i32 0, i32 0
-  %239 = load double, double* %238, align 8
-  %240 = fmul double %234, %239
-  %241 = load double, double* %10, align 8
-  %242 = fadd double %240, %241
-  %243 = getelementptr inbounds %struct.vec3, %struct.vec3* %9, i32 0, i32 0
-  %244 = load double, double* %243, align 8
-  %245 = fadd double %244, %242
-  store double %245, double* %243, align 8
-  %246 = load double, double* %11, align 8
-  %247 = load %struct.sphere*, %struct.sphere** %5, align 8
-  %248 = getelementptr inbounds %struct.sphere, %struct.sphere* %247, i32 0, i32 2
-  %249 = getelementptr inbounds %struct.material, %struct.material* %248, i32 0, i32 0
-  %250 = getelementptr inbounds %struct.vec3, %struct.vec3* %249, i32 0, i32 1
-  %251 = load double, double* %250, align 8
-  %252 = fmul double %246, %251
-  %253 = load double, double* %10, align 8
-  %254 = fadd double %252, %253
-  %255 = getelementptr inbounds %struct.vec3, %struct.vec3* %9, i32 0, i32 1
-  %256 = load double, double* %255, align 8
-  %257 = fadd double %256, %254
-  store double %257, double* %255, align 8
-  %258 = load double, double* %11, align 8
-  %259 = load %struct.sphere*, %struct.sphere** %5, align 8
-  %260 = getelementptr inbounds %struct.sphere, %struct.sphere* %259, i32 0, i32 2
-  %261 = getelementptr inbounds %struct.material, %struct.material* %260, i32 0, i32 0
-  %262 = getelementptr inbounds %struct.vec3, %struct.vec3* %261, i32 0, i32 2
-  %263 = load double, double* %262, align 8
-  %264 = fmul double %258, %263
-  %265 = load double, double* %10, align 8
-  %266 = fadd double %264, %265
-  %267 = getelementptr inbounds %struct.vec3, %struct.vec3* %9, i32 0, i32 2
-  %268 = load double, double* %267, align 8
-  %269 = fadd double %268, %266
-  store double %269, double* %267, align 8
+; <label>:231:                                    ; preds = %230, %223
+  %232 = phi double [ %229, %223 ], [ 0.000000e+00, %230 ]
+  store double %232, double* %9, align 8
+  %233 = load double, double* %10, align 8
+  %234 = load %struct.sphere*, %struct.sphere** %5, align 8
+  %235 = getelementptr inbounds %struct.sphere, %struct.sphere* %234, i32 0, i32 2
+  %236 = getelementptr inbounds %struct.material, %struct.material* %235, i32 0, i32 0
+  %237 = getelementptr inbounds %struct.vec3, %struct.vec3* %236, i32 0, i32 0
+  %238 = load double, double* %237, align 8
+  %239 = fmul double %233, %238
+  %240 = load double, double* %9, align 8
+  %241 = fadd double %239, %240
+  %242 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 0
+  %243 = load double, double* %242, align 8
+  %244 = fadd double %243, %241
+  store double %244, double* %242, align 8
+  %245 = load double, double* %10, align 8
+  %246 = load %struct.sphere*, %struct.sphere** %5, align 8
+  %247 = getelementptr inbounds %struct.sphere, %struct.sphere* %246, i32 0, i32 2
+  %248 = getelementptr inbounds %struct.material, %struct.material* %247, i32 0, i32 0
+  %249 = getelementptr inbounds %struct.vec3, %struct.vec3* %248, i32 0, i32 1
+  %250 = load double, double* %249, align 8
+  %251 = fmul double %245, %250
+  %252 = load double, double* %9, align 8
+  %253 = fadd double %251, %252
+  %254 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 1
+  %255 = load double, double* %254, align 8
+  %256 = fadd double %255, %253
+  store double %256, double* %254, align 8
+  %257 = load double, double* %10, align 8
+  %258 = load %struct.sphere*, %struct.sphere** %5, align 8
+  %259 = getelementptr inbounds %struct.sphere, %struct.sphere* %258, i32 0, i32 2
+  %260 = getelementptr inbounds %struct.material, %struct.material* %259, i32 0, i32 0
+  %261 = getelementptr inbounds %struct.vec3, %struct.vec3* %260, i32 0, i32 2
+  %262 = load double, double* %261, align 8
+  %263 = fmul double %257, %262
+  %264 = load double, double* %9, align 8
+  %265 = fadd double %263, %264
+  %266 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 2
+  %267 = load double, double* %266, align 8
+  %268 = fadd double %267, %265
+  store double %268, double* %266, align 8
+  br label %269
+
+; <label>:269:                                    ; preds = %231, %81
   br label %270
 
-; <label>:270:                                    ; preds = %232, %82
-  br label %271
+; <label>:270:                                    ; preds = %269
+  %271 = load i32, i32* %8, align 4
+  %272 = add nsw i32 %271, 1
+  store i32 %272, i32* %8, align 4
+  br label %20
 
-; <label>:271:                                    ; preds = %270
-  %272 = load i32, i32* %8, align 4
-  %273 = add nsw i32 %272, 1
-  store i32 %273, i32* %8, align 4
-  br label %21
+; <label>:273:                                    ; preds = %20
+  %274 = load %struct.sphere*, %struct.sphere** %5, align 8
+  %275 = getelementptr inbounds %struct.sphere, %struct.sphere* %274, i32 0, i32 2
+  %276 = getelementptr inbounds %struct.material, %struct.material* %275, i32 0, i32 2
+  %277 = load double, double* %276, align 8
+  %278 = fcmp ogt double %277, 0.000000e+00
+  br i1 %278, label %279, label %336
 
-; <label>:274:                                    ; preds = %21
-  %275 = load %struct.sphere*, %struct.sphere** %5, align 8
-  %276 = getelementptr inbounds %struct.sphere, %struct.sphere* %275, i32 0, i32 2
-  %277 = getelementptr inbounds %struct.material, %struct.material* %276, i32 0, i32 2
-  %278 = load double, double* %277, align 8
-  %279 = fcmp ogt double %278, 0.000000e+00
-  br i1 %279, label %280, label %337
-
-; <label>:280:                                    ; preds = %274
-  %281 = getelementptr inbounds %struct.ray, %struct.ray* %17, i32 0, i32 0
-  %282 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %283 = getelementptr inbounds %struct.spoint, %struct.spoint* %282, i32 0, i32 0
-  %284 = bitcast %struct.vec3* %281 to i8*
-  %285 = bitcast %struct.vec3* %283 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %284, i8* align 8 %285, i64 24, i1 false)
-  %286 = getelementptr inbounds %struct.ray, %struct.ray* %17, i32 0, i32 1
-  %287 = load %struct.spoint*, %struct.spoint** %6, align 8
-  %288 = getelementptr inbounds %struct.spoint, %struct.spoint* %287, i32 0, i32 2
-  %289 = bitcast %struct.vec3* %286 to i8*
-  %290 = bitcast %struct.vec3* %288 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %289, i8* align 8 %290, i64 24, i1 false)
-  %291 = getelementptr inbounds %struct.ray, %struct.ray* %17, i32 0, i32 1
-  %292 = getelementptr inbounds %struct.vec3, %struct.vec3* %291, i32 0, i32 0
-  %293 = load double, double* %292, align 8
-  %294 = fmul double %293, 1.000000e+03
-  store double %294, double* %292, align 8
-  %295 = getelementptr inbounds %struct.ray, %struct.ray* %17, i32 0, i32 1
-  %296 = getelementptr inbounds %struct.vec3, %struct.vec3* %295, i32 0, i32 1
-  %297 = load double, double* %296, align 8
-  %298 = fmul double %297, 1.000000e+03
-  store double %298, double* %296, align 8
-  %299 = getelementptr inbounds %struct.ray, %struct.ray* %17, i32 0, i32 1
-  %300 = getelementptr inbounds %struct.vec3, %struct.vec3* %299, i32 0, i32 2
-  %301 = load double, double* %300, align 8
-  %302 = fmul double %301, 1.000000e+03
-  store double %302, double* %300, align 8
-  %303 = load i32, i32* %7, align 4
-  %304 = add nsw i32 %303, 1
-  call void @trace(%struct.vec3* sret %19, %struct.ray* byval align 8 %17, i32 %304)
+; <label>:279:                                    ; preds = %273
+  %280 = getelementptr inbounds %struct.ray, %struct.ray* %16, i32 0, i32 0
+  %281 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %282 = getelementptr inbounds %struct.spoint, %struct.spoint* %281, i32 0, i32 0
+  %283 = bitcast %struct.vec3* %280 to i8*
+  %284 = bitcast %struct.vec3* %282 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %283, i8* align 8 %284, i64 24, i1 false)
+  %285 = getelementptr inbounds %struct.ray, %struct.ray* %16, i32 0, i32 1
+  %286 = load %struct.spoint*, %struct.spoint** %6, align 8
+  %287 = getelementptr inbounds %struct.spoint, %struct.spoint* %286, i32 0, i32 2
+  %288 = bitcast %struct.vec3* %285 to i8*
+  %289 = bitcast %struct.vec3* %287 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %288, i8* align 8 %289, i64 24, i1 false)
+  %290 = getelementptr inbounds %struct.ray, %struct.ray* %16, i32 0, i32 1
+  %291 = getelementptr inbounds %struct.vec3, %struct.vec3* %290, i32 0, i32 0
+  %292 = load double, double* %291, align 8
+  %293 = fmul double %292, 1.000000e+03
+  store double %293, double* %291, align 8
+  %294 = getelementptr inbounds %struct.ray, %struct.ray* %16, i32 0, i32 1
+  %295 = getelementptr inbounds %struct.vec3, %struct.vec3* %294, i32 0, i32 1
+  %296 = load double, double* %295, align 8
+  %297 = fmul double %296, 1.000000e+03
+  store double %297, double* %295, align 8
+  %298 = getelementptr inbounds %struct.ray, %struct.ray* %16, i32 0, i32 1
+  %299 = getelementptr inbounds %struct.vec3, %struct.vec3* %298, i32 0, i32 2
+  %300 = load double, double* %299, align 8
+  %301 = fmul double %300, 1.000000e+03
+  store double %301, double* %299, align 8
+  %302 = load i32, i32* %7, align 4
+  %303 = add nsw i32 %302, 1
+  call void @trace(%struct.vec3* sret %18, %struct.ray* byval align 8 %16, i32 %303)
+  %304 = bitcast %struct.vec3* %17 to i8*
   %305 = bitcast %struct.vec3* %18 to i8*
-  %306 = bitcast %struct.vec3* %19 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %305, i8* align 8 %306, i64 24, i1 false)
-  %307 = getelementptr inbounds %struct.vec3, %struct.vec3* %18, i32 0, i32 0
-  %308 = load double, double* %307, align 8
-  %309 = load %struct.sphere*, %struct.sphere** %5, align 8
-  %310 = getelementptr inbounds %struct.sphere, %struct.sphere* %309, i32 0, i32 2
-  %311 = getelementptr inbounds %struct.material, %struct.material* %310, i32 0, i32 2
-  %312 = load double, double* %311, align 8
-  %313 = fmul double %308, %312
-  %314 = getelementptr inbounds %struct.vec3, %struct.vec3* %9, i32 0, i32 0
-  %315 = load double, double* %314, align 8
-  %316 = fadd double %315, %313
-  store double %316, double* %314, align 8
-  %317 = getelementptr inbounds %struct.vec3, %struct.vec3* %18, i32 0, i32 1
-  %318 = load double, double* %317, align 8
-  %319 = load %struct.sphere*, %struct.sphere** %5, align 8
-  %320 = getelementptr inbounds %struct.sphere, %struct.sphere* %319, i32 0, i32 2
-  %321 = getelementptr inbounds %struct.material, %struct.material* %320, i32 0, i32 2
-  %322 = load double, double* %321, align 8
-  %323 = fmul double %318, %322
-  %324 = getelementptr inbounds %struct.vec3, %struct.vec3* %9, i32 0, i32 1
-  %325 = load double, double* %324, align 8
-  %326 = fadd double %325, %323
-  store double %326, double* %324, align 8
-  %327 = getelementptr inbounds %struct.vec3, %struct.vec3* %18, i32 0, i32 2
-  %328 = load double, double* %327, align 8
-  %329 = load %struct.sphere*, %struct.sphere** %5, align 8
-  %330 = getelementptr inbounds %struct.sphere, %struct.sphere* %329, i32 0, i32 2
-  %331 = getelementptr inbounds %struct.material, %struct.material* %330, i32 0, i32 2
-  %332 = load double, double* %331, align 8
-  %333 = fmul double %328, %332
-  %334 = getelementptr inbounds %struct.vec3, %struct.vec3* %9, i32 0, i32 2
-  %335 = load double, double* %334, align 8
-  %336 = fadd double %335, %333
-  store double %336, double* %334, align 8
-  br label %337
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %304, i8* align 8 %305, i64 24, i1 false)
+  %306 = getelementptr inbounds %struct.vec3, %struct.vec3* %17, i32 0, i32 0
+  %307 = load double, double* %306, align 8
+  %308 = load %struct.sphere*, %struct.sphere** %5, align 8
+  %309 = getelementptr inbounds %struct.sphere, %struct.sphere* %308, i32 0, i32 2
+  %310 = getelementptr inbounds %struct.material, %struct.material* %309, i32 0, i32 2
+  %311 = load double, double* %310, align 8
+  %312 = fmul double %307, %311
+  %313 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 0
+  %314 = load double, double* %313, align 8
+  %315 = fadd double %314, %312
+  store double %315, double* %313, align 8
+  %316 = getelementptr inbounds %struct.vec3, %struct.vec3* %17, i32 0, i32 1
+  %317 = load double, double* %316, align 8
+  %318 = load %struct.sphere*, %struct.sphere** %5, align 8
+  %319 = getelementptr inbounds %struct.sphere, %struct.sphere* %318, i32 0, i32 2
+  %320 = getelementptr inbounds %struct.material, %struct.material* %319, i32 0, i32 2
+  %321 = load double, double* %320, align 8
+  %322 = fmul double %317, %321
+  %323 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 1
+  %324 = load double, double* %323, align 8
+  %325 = fadd double %324, %322
+  store double %325, double* %323, align 8
+  %326 = getelementptr inbounds %struct.vec3, %struct.vec3* %17, i32 0, i32 2
+  %327 = load double, double* %326, align 8
+  %328 = load %struct.sphere*, %struct.sphere** %5, align 8
+  %329 = getelementptr inbounds %struct.sphere, %struct.sphere* %328, i32 0, i32 2
+  %330 = getelementptr inbounds %struct.material, %struct.material* %329, i32 0, i32 2
+  %331 = load double, double* %330, align 8
+  %332 = fmul double %327, %331
+  %333 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 2
+  %334 = load double, double* %333, align 8
+  %335 = fadd double %334, %332
+  store double %335, double* %333, align 8
+  br label %336
 
-; <label>:337:                                    ; preds = %280, %274
-  %338 = bitcast %struct.vec3* %0 to i8*
-  %339 = bitcast %struct.vec3* %9 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %338, i8* align 8 %339, i64 24, i1 false)
+; <label>:336:                                    ; preds = %279, %273
   ret void
 }
 
-; Function Attrs: nounwind
-declare double @sqrt(double) #2
+; Function Attrs: argmemonly nounwind
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1) #3
 
 ; Function Attrs: nounwind
-declare double @pow(double, double) #2
+declare dso_local double @sqrt(double) #2
+
+; Function Attrs: nounwind
+declare dso_local double @pow(double, double) #2
 
 ; Function Attrs: noinline nounwind optnone uwtable
-define void @reflect(%struct.vec3* noalias sret, %struct.vec3* byval align 8, %struct.vec3* byval align 8) #0 {
-  %4 = alloca %struct.vec3, align 8
-  %5 = alloca double, align 8
-  %6 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 0
-  %7 = load double, double* %6, align 8
-  %8 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 0
-  %9 = load double, double* %8, align 8
-  %10 = fmul double %7, %9
-  %11 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 1
-  %12 = load double, double* %11, align 8
-  %13 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 1
-  %14 = load double, double* %13, align 8
-  %15 = fmul double %12, %14
-  %16 = fadd double %10, %15
-  %17 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 2
-  %18 = load double, double* %17, align 8
-  %19 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 2
-  %20 = load double, double* %19, align 8
-  %21 = fmul double %18, %20
-  %22 = fadd double %16, %21
-  store double %22, double* %5, align 8
-  %23 = load double, double* %5, align 8
-  %24 = fmul double 2.000000e+00, %23
-  %25 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 0
-  %26 = load double, double* %25, align 8
-  %27 = fmul double %24, %26
-  %28 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 0
-  %29 = load double, double* %28, align 8
-  %30 = fsub double %27, %29
-  %31 = fsub double -0.000000e+00, %30
-  %32 = getelementptr inbounds %struct.vec3, %struct.vec3* %4, i32 0, i32 0
-  store double %31, double* %32, align 8
-  %33 = load double, double* %5, align 8
-  %34 = fmul double 2.000000e+00, %33
-  %35 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 1
-  %36 = load double, double* %35, align 8
-  %37 = fmul double %34, %36
-  %38 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 1
-  %39 = load double, double* %38, align 8
-  %40 = fsub double %37, %39
-  %41 = fsub double -0.000000e+00, %40
-  %42 = getelementptr inbounds %struct.vec3, %struct.vec3* %4, i32 0, i32 1
-  store double %41, double* %42, align 8
-  %43 = load double, double* %5, align 8
-  %44 = fmul double 2.000000e+00, %43
-  %45 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 2
-  %46 = load double, double* %45, align 8
-  %47 = fmul double %44, %46
-  %48 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 2
-  %49 = load double, double* %48, align 8
-  %50 = fsub double %47, %49
-  %51 = fsub double -0.000000e+00, %50
-  %52 = getelementptr inbounds %struct.vec3, %struct.vec3* %4, i32 0, i32 2
-  store double %51, double* %52, align 8
-  %53 = bitcast %struct.vec3* %0 to i8*
-  %54 = bitcast %struct.vec3* %4 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %53, i8* align 8 %54, i64 24, i1 false)
-  ret void
-}
-
-; Function Attrs: noinline nounwind optnone uwtable
-define void @cross_product(%struct.vec3* noalias sret, %struct.vec3* byval align 8, %struct.vec3* byval align 8) #0 {
-  %4 = alloca %struct.vec3, align 8
-  %5 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 1
+define dso_local void @reflect(%struct.vec3* noalias sret, %struct.vec3* byval align 8, %struct.vec3* byval align 8) #0 {
+  %4 = alloca double, align 8
+  %5 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 0
   %6 = load double, double* %5, align 8
-  %7 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 2
+  %7 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 0
   %8 = load double, double* %7, align 8
   %9 = fmul double %6, %8
-  %10 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 2
+  %10 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 1
   %11 = load double, double* %10, align 8
   %12 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 1
   %13 = load double, double* %12, align 8
   %14 = fmul double %11, %13
-  %15 = fsub double %9, %14
-  %16 = getelementptr inbounds %struct.vec3, %struct.vec3* %4, i32 0, i32 0
-  store double %15, double* %16, align 8
-  %17 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 2
-  %18 = load double, double* %17, align 8
-  %19 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 0
-  %20 = load double, double* %19, align 8
-  %21 = fmul double %18, %20
-  %22 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 0
-  %23 = load double, double* %22, align 8
-  %24 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 2
+  %15 = fadd double %9, %14
+  %16 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 2
+  %17 = load double, double* %16, align 8
+  %18 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 2
+  %19 = load double, double* %18, align 8
+  %20 = fmul double %17, %19
+  %21 = fadd double %15, %20
+  store double %21, double* %4, align 8
+  %22 = load double, double* %4, align 8
+  %23 = fmul double 2.000000e+00, %22
+  %24 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 0
   %25 = load double, double* %24, align 8
   %26 = fmul double %23, %25
-  %27 = fsub double %21, %26
-  %28 = getelementptr inbounds %struct.vec3, %struct.vec3* %4, i32 0, i32 1
-  store double %27, double* %28, align 8
-  %29 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 0
-  %30 = load double, double* %29, align 8
-  %31 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 1
-  %32 = load double, double* %31, align 8
-  %33 = fmul double %30, %32
-  %34 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 1
+  %27 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 0
+  %28 = load double, double* %27, align 8
+  %29 = fsub double %26, %28
+  %30 = fsub double -0.000000e+00, %29
+  %31 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 0
+  store double %30, double* %31, align 8
+  %32 = load double, double* %4, align 8
+  %33 = fmul double 2.000000e+00, %32
+  %34 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 1
   %35 = load double, double* %34, align 8
-  %36 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 0
-  %37 = load double, double* %36, align 8
-  %38 = fmul double %35, %37
-  %39 = fsub double %33, %38
-  %40 = getelementptr inbounds %struct.vec3, %struct.vec3* %4, i32 0, i32 2
-  store double %39, double* %40, align 8
-  %41 = bitcast %struct.vec3* %0 to i8*
-  %42 = bitcast %struct.vec3* %4 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %41, i8* align 8 %42, i64 24, i1 false)
+  %36 = fmul double %33, %35
+  %37 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 1
+  %38 = load double, double* %37, align 8
+  %39 = fsub double %36, %38
+  %40 = fsub double -0.000000e+00, %39
+  %41 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 1
+  store double %40, double* %41, align 8
+  %42 = load double, double* %4, align 8
+  %43 = fmul double 2.000000e+00, %42
+  %44 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 2
+  %45 = load double, double* %44, align 8
+  %46 = fmul double %43, %45
+  %47 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 2
+  %48 = load double, double* %47, align 8
+  %49 = fsub double %46, %48
+  %50 = fsub double -0.000000e+00, %49
+  %51 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 2
+  store double %50, double* %51, align 8
   ret void
 }
 
 ; Function Attrs: noinline nounwind optnone uwtable
-define void @get_sample_pos(%struct.vec3* noalias sret, i32, i32, i32) #0 {
-  %5 = alloca i32, align 4
-  %6 = alloca i32, align 4
-  %7 = alloca i32, align 4
-  %8 = alloca %struct.vec3, align 8
-  %9 = alloca double, align 8
-  %10 = alloca double, align 8
-  %11 = alloca %struct.vec3, align 8
-  store i32 %1, i32* %5, align 4
-  store i32 %2, i32* %6, align 4
-  store i32 %3, i32* %7, align 4
-  store double 2.000000e+00, double* %9, align 8
-  %12 = load i32, i32* @xres, align 4
-  %13 = sitofp i32 %12 to double
-  %14 = load double, double* @aspect, align 8
-  %15 = fdiv double %13, %14
-  store double %15, double* %10, align 8
-  %16 = load double, double* @get_sample_pos.sf, align 8
-  %17 = fcmp oeq double %16, 0.000000e+00
-  br i1 %17, label %18, label %22
-
-; <label>:18:                                     ; preds = %4
-  %19 = load i32, i32* @xres, align 4
-  %20 = sitofp i32 %19 to double
-  %21 = fdiv double 2.000000e+00, %20
-  store double %21, double* @get_sample_pos.sf, align 8
-  br label %22
-
-; <label>:22:                                     ; preds = %18, %4
-  %23 = load i32, i32* %5, align 4
-  %24 = sitofp i32 %23 to double
-  %25 = load i32, i32* @xres, align 4
-  %26 = sitofp i32 %25 to double
-  %27 = fdiv double %24, %26
-  %28 = fsub double %27, 5.000000e-01
-  %29 = getelementptr inbounds %struct.vec3, %struct.vec3* %8, i32 0, i32 0
-  store double %28, double* %29, align 8
-  %30 = load i32, i32* %6, align 4
-  %31 = sitofp i32 %30 to double
-  %32 = load i32, i32* @yres, align 4
-  %33 = sitofp i32 %32 to double
-  %34 = fdiv double %31, %33
-  %35 = fsub double %34, 6.500000e-01
-  %36 = fsub double -0.000000e+00, %35
-  %37 = load double, double* @aspect, align 8
-  %38 = fdiv double %36, %37
-  %39 = getelementptr inbounds %struct.vec3, %struct.vec3* %8, i32 0, i32 1
+define dso_local void @cross_product(%struct.vec3* noalias sret, %struct.vec3* byval align 8, %struct.vec3* byval align 8) #0 {
+  %4 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 1
+  %5 = load double, double* %4, align 8
+  %6 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 2
+  %7 = load double, double* %6, align 8
+  %8 = fmul double %5, %7
+  %9 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 2
+  %10 = load double, double* %9, align 8
+  %11 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 1
+  %12 = load double, double* %11, align 8
+  %13 = fmul double %10, %12
+  %14 = fsub double %8, %13
+  %15 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 0
+  store double %14, double* %15, align 8
+  %16 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 2
+  %17 = load double, double* %16, align 8
+  %18 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 0
+  %19 = load double, double* %18, align 8
+  %20 = fmul double %17, %19
+  %21 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 0
+  %22 = load double, double* %21, align 8
+  %23 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 2
+  %24 = load double, double* %23, align 8
+  %25 = fmul double %22, %24
+  %26 = fsub double %20, %25
+  %27 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 1
+  store double %26, double* %27, align 8
+  %28 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 0
+  %29 = load double, double* %28, align 8
+  %30 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 1
+  %31 = load double, double* %30, align 8
+  %32 = fmul double %29, %31
+  %33 = getelementptr inbounds %struct.vec3, %struct.vec3* %1, i32 0, i32 1
+  %34 = load double, double* %33, align 8
+  %35 = getelementptr inbounds %struct.vec3, %struct.vec3* %2, i32 0, i32 0
+  %36 = load double, double* %35, align 8
+  %37 = fmul double %34, %36
+  %38 = fsub double %32, %37
+  %39 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 2
   store double %38, double* %39, align 8
-  %40 = load i32, i32* %7, align 4
-  %41 = icmp ne i32 %40, 0
-  br i1 %41, label %42, label %62
-
-; <label>:42:                                     ; preds = %22
-  %43 = load i32, i32* %5, align 4
-  %44 = load i32, i32* %6, align 4
-  %45 = load i32, i32* %7, align 4
-  call void @jitter(%struct.vec3* sret %11, i32 %43, i32 %44, i32 %45)
-  %46 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 0
-  %47 = load double, double* %46, align 8
-  %48 = load double, double* @get_sample_pos.sf, align 8
-  %49 = fmul double %47, %48
-  %50 = getelementptr inbounds %struct.vec3, %struct.vec3* %8, i32 0, i32 0
-  %51 = load double, double* %50, align 8
-  %52 = fadd double %51, %49
-  store double %52, double* %50, align 8
-  %53 = getelementptr inbounds %struct.vec3, %struct.vec3* %11, i32 0, i32 1
-  %54 = load double, double* %53, align 8
-  %55 = load double, double* @get_sample_pos.sf, align 8
-  %56 = fmul double %54, %55
-  %57 = load double, double* @aspect, align 8
-  %58 = fdiv double %56, %57
-  %59 = getelementptr inbounds %struct.vec3, %struct.vec3* %8, i32 0, i32 1
-  %60 = load double, double* %59, align 8
-  %61 = fadd double %60, %58
-  store double %61, double* %59, align 8
-  br label %62
-
-; <label>:62:                                     ; preds = %42, %22
-  %63 = bitcast %struct.vec3* %0 to i8*
-  %64 = bitcast %struct.vec3* %8 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %63, i8* align 8 %64, i64 24, i1 false)
   ret void
 }
 
 ; Function Attrs: noinline nounwind optnone uwtable
-define void @jitter(%struct.vec3* noalias sret, i32, i32, i32) #0 {
+define dso_local void @get_sample_pos(%struct.vec3* noalias sret, i32, i32, i32) #0 {
   %5 = alloca i32, align 4
   %6 = alloca i32, align 4
   %7 = alloca i32, align 4
-  %8 = alloca %struct.vec3, align 8
+  %8 = alloca double, align 8
+  %9 = alloca double, align 8
+  %10 = alloca %struct.vec3, align 8
   store i32 %1, i32* %5, align 4
   store i32 %2, i32* %6, align 4
   store i32 %3, i32* %7, align 4
-  %9 = load i32, i32* %5, align 4
-  %10 = load i32, i32* %6, align 4
-  %11 = shl i32 %10, 2
-  %12 = add nsw i32 %9, %11
-  %13 = load i32, i32* %5, align 4
-  %14 = load i32, i32* %7, align 4
-  %15 = add nsw i32 %13, %14
-  %16 = and i32 %15, 1023
-  %17 = sext i32 %16 to i64
-  %18 = getelementptr inbounds [1024 x i32], [1024 x i32]* @irand, i64 0, i64 %17
-  %19 = load i32, i32* %18, align 4
-  %20 = add nsw i32 %12, %19
-  %21 = and i32 %20, 1023
-  %22 = sext i32 %21 to i64
-  %23 = getelementptr inbounds [1024 x %struct.vec3], [1024 x %struct.vec3]* @urand, i64 0, i64 %22
-  %24 = getelementptr inbounds %struct.vec3, %struct.vec3* %23, i32 0, i32 0
-  %25 = load double, double* %24, align 8
-  %26 = getelementptr inbounds %struct.vec3, %struct.vec3* %8, i32 0, i32 0
-  store double %25, double* %26, align 8
-  %27 = load i32, i32* %6, align 4
-  %28 = load i32, i32* %5, align 4
-  %29 = shl i32 %28, 2
-  %30 = add nsw i32 %27, %29
-  %31 = load i32, i32* %6, align 4
-  %32 = load i32, i32* %7, align 4
-  %33 = add nsw i32 %31, %32
-  %34 = and i32 %33, 1023
-  %35 = sext i32 %34 to i64
-  %36 = getelementptr inbounds [1024 x i32], [1024 x i32]* @irand, i64 0, i64 %35
-  %37 = load i32, i32* %36, align 4
-  %38 = add nsw i32 %30, %37
-  %39 = and i32 %38, 1023
-  %40 = sext i32 %39 to i64
-  %41 = getelementptr inbounds [1024 x %struct.vec3], [1024 x %struct.vec3]* @urand, i64 0, i64 %40
-  %42 = getelementptr inbounds %struct.vec3, %struct.vec3* %41, i32 0, i32 1
-  %43 = load double, double* %42, align 8
-  %44 = getelementptr inbounds %struct.vec3, %struct.vec3* %8, i32 0, i32 1
-  store double %43, double* %44, align 8
-  %45 = bitcast %struct.vec3* %0 to i8*
-  %46 = bitcast %struct.vec3* %8 to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 8 %45, i8* align 8 %46, i64 24, i1 false)
+  store double 2.000000e+00, double* %8, align 8
+  %11 = load i32, i32* @xres, align 4
+  %12 = sitofp i32 %11 to double
+  %13 = load double, double* @aspect, align 8
+  %14 = fdiv double %12, %13
+  store double %14, double* %9, align 8
+  %15 = load double, double* @get_sample_pos.sf, align 8
+  %16 = fcmp oeq double %15, 0.000000e+00
+  br i1 %16, label %17, label %21
+
+; <label>:17:                                     ; preds = %4
+  %18 = load i32, i32* @xres, align 4
+  %19 = sitofp i32 %18 to double
+  %20 = fdiv double 2.000000e+00, %19
+  store double %20, double* @get_sample_pos.sf, align 8
+  br label %21
+
+; <label>:21:                                     ; preds = %17, %4
+  %22 = load i32, i32* %5, align 4
+  %23 = sitofp i32 %22 to double
+  %24 = load i32, i32* @xres, align 4
+  %25 = sitofp i32 %24 to double
+  %26 = fdiv double %23, %25
+  %27 = fsub double %26, 5.000000e-01
+  %28 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 0
+  store double %27, double* %28, align 8
+  %29 = load i32, i32* %6, align 4
+  %30 = sitofp i32 %29 to double
+  %31 = load i32, i32* @yres, align 4
+  %32 = sitofp i32 %31 to double
+  %33 = fdiv double %30, %32
+  %34 = fsub double %33, 6.500000e-01
+  %35 = fsub double -0.000000e+00, %34
+  %36 = load double, double* @aspect, align 8
+  %37 = fdiv double %35, %36
+  %38 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 1
+  store double %37, double* %38, align 8
+  %39 = load i32, i32* %7, align 4
+  %40 = icmp ne i32 %39, 0
+  br i1 %40, label %41, label %61
+
+; <label>:41:                                     ; preds = %21
+  %42 = load i32, i32* %5, align 4
+  %43 = load i32, i32* %6, align 4
+  %44 = load i32, i32* %7, align 4
+  call void @jitter(%struct.vec3* sret %10, i32 %42, i32 %43, i32 %44)
+  %45 = getelementptr inbounds %struct.vec3, %struct.vec3* %10, i32 0, i32 0
+  %46 = load double, double* %45, align 8
+  %47 = load double, double* @get_sample_pos.sf, align 8
+  %48 = fmul double %46, %47
+  %49 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 0
+  %50 = load double, double* %49, align 8
+  %51 = fadd double %50, %48
+  store double %51, double* %49, align 8
+  %52 = getelementptr inbounds %struct.vec3, %struct.vec3* %10, i32 0, i32 1
+  %53 = load double, double* %52, align 8
+  %54 = load double, double* @get_sample_pos.sf, align 8
+  %55 = fmul double %53, %54
+  %56 = load double, double* @aspect, align 8
+  %57 = fdiv double %55, %56
+  %58 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 1
+  %59 = load double, double* %58, align 8
+  %60 = fadd double %59, %57
+  store double %60, double* %58, align 8
+  br label %61
+
+; <label>:61:                                     ; preds = %41, %21
   ret void
 }
 
-declare i8* @fgets(i8*, i32, %struct._IO_FILE*) #1
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @jitter(%struct.vec3* noalias sret, i32, i32, i32) #0 {
+  %5 = alloca i32, align 4
+  %6 = alloca i32, align 4
+  %7 = alloca i32, align 4
+  store i32 %1, i32* %5, align 4
+  store i32 %2, i32* %6, align 4
+  store i32 %3, i32* %7, align 4
+  %8 = load i32, i32* %5, align 4
+  %9 = load i32, i32* %6, align 4
+  %10 = shl i32 %9, 2
+  %11 = add nsw i32 %8, %10
+  %12 = load i32, i32* %5, align 4
+  %13 = load i32, i32* %7, align 4
+  %14 = add nsw i32 %12, %13
+  %15 = and i32 %14, 1023
+  %16 = sext i32 %15 to i64
+  %17 = getelementptr inbounds [1024 x i32], [1024 x i32]* @irand, i64 0, i64 %16
+  %18 = load i32, i32* %17, align 4
+  %19 = add nsw i32 %11, %18
+  %20 = and i32 %19, 1023
+  %21 = sext i32 %20 to i64
+  %22 = getelementptr inbounds [1024 x %struct.vec3], [1024 x %struct.vec3]* @urand, i64 0, i64 %21
+  %23 = getelementptr inbounds %struct.vec3, %struct.vec3* %22, i32 0, i32 0
+  %24 = load double, double* %23, align 8
+  %25 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 0
+  store double %24, double* %25, align 8
+  %26 = load i32, i32* %6, align 4
+  %27 = load i32, i32* %5, align 4
+  %28 = shl i32 %27, 2
+  %29 = add nsw i32 %26, %28
+  %30 = load i32, i32* %6, align 4
+  %31 = load i32, i32* %7, align 4
+  %32 = add nsw i32 %30, %31
+  %33 = and i32 %32, 1023
+  %34 = sext i32 %33 to i64
+  %35 = getelementptr inbounds [1024 x i32], [1024 x i32]* @irand, i64 0, i64 %34
+  %36 = load i32, i32* %35, align 4
+  %37 = add nsw i32 %29, %36
+  %38 = and i32 %37, 1023
+  %39 = sext i32 %38 to i64
+  %40 = getelementptr inbounds [1024 x %struct.vec3], [1024 x %struct.vec3]* @urand, i64 0, i64 %39
+  %41 = getelementptr inbounds %struct.vec3, %struct.vec3* %40, i32 0, i32 1
+  %42 = load double, double* %41, align 8
+  %43 = getelementptr inbounds %struct.vec3, %struct.vec3* %0, i32 0, i32 1
+  store double %42, double* %43, align 8
+  ret void
+}
+
+declare dso_local i8* @fgets(i8*, i32, %struct._IO_FILE*) #1
 
 ; Function Attrs: nounwind
-declare i8* @strtok(i8*, i8*) #2
+declare dso_local i8* @strtok(i8*, i8*) #2
 
 ; Function Attrs: nounwind readonly
-declare double @atof(i8*) #3
+declare dso_local double @atof(i8*) #4
 
 ; Function Attrs: nounwind
-declare i32 @gettimeofday(%struct.timeval*, %struct.timezone*) #2
+declare dso_local i32 @gettimeofday(%struct.timeval*, %struct.timezone*) #2
 
-; Function Attrs: argmemonly nounwind
-declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture readonly, i64, i1) #4
-
-; Function Attrs: argmemonly nounwind
-declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1) #4
-
-attributes #0 = { noinline nounwind optnone uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #2 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #3 = { nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #4 = { argmemonly nounwind }
+attributes #0 = { noinline nounwind optnone uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="broadwell" "target-features"="+adx,+aes,+avx,+avx2,+bmi,+bmi2,+cmov,+cx16,+f16c,+fma,+fsgsbase,+fxsr,+invpcid,+lzcnt,+mmx,+movbe,+pclmul,+popcnt,+prfchw,+rdrnd,+rdseed,+sahf,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave,+xsaveopt,-avx512bitalg,-avx512bw,-avx512cd,-avx512dq,-avx512er,-avx512f,-avx512ifma,-avx512pf,-avx512vbmi,-avx512vbmi2,-avx512vl,-avx512vnni,-avx512vpopcntdq,-cldemote,-clflushopt,-clwb,-clzero,-fma4,-gfni,-lwp,-movdir64b,-movdiri,-mwaitx,-pconfig,-pku,-prefetchwt1,-ptwrite,-rdpid,-rtm,-sgx,-sha,-shstk,-sse4a,-tbm,-vaes,-vpclmulqdq,-waitpkg,-wbnoinvd,-xop,-xsavec,-xsaves" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="broadwell" "target-features"="+adx,+aes,+avx,+avx2,+bmi,+bmi2,+cmov,+cx16,+f16c,+fma,+fsgsbase,+fxsr,+invpcid,+lzcnt,+mmx,+movbe,+pclmul,+popcnt,+prfchw,+rdrnd,+rdseed,+sahf,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave,+xsaveopt,-avx512bitalg,-avx512bw,-avx512cd,-avx512dq,-avx512er,-avx512f,-avx512ifma,-avx512pf,-avx512vbmi,-avx512vbmi2,-avx512vl,-avx512vnni,-avx512vpopcntdq,-cldemote,-clflushopt,-clwb,-clzero,-fma4,-gfni,-lwp,-movdir64b,-movdiri,-mwaitx,-pconfig,-pku,-prefetchwt1,-ptwrite,-rdpid,-rtm,-sgx,-sha,-shstk,-sse4a,-tbm,-vaes,-vpclmulqdq,-waitpkg,-wbnoinvd,-xop,-xsavec,-xsaves" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="broadwell" "target-features"="+adx,+aes,+avx,+avx2,+bmi,+bmi2,+cmov,+cx16,+f16c,+fma,+fsgsbase,+fxsr,+invpcid,+lzcnt,+mmx,+movbe,+pclmul,+popcnt,+prfchw,+rdrnd,+rdseed,+sahf,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave,+xsaveopt,-avx512bitalg,-avx512bw,-avx512cd,-avx512dq,-avx512er,-avx512f,-avx512ifma,-avx512pf,-avx512vbmi,-avx512vbmi2,-avx512vl,-avx512vnni,-avx512vpopcntdq,-cldemote,-clflushopt,-clwb,-clzero,-fma4,-gfni,-lwp,-movdir64b,-movdiri,-mwaitx,-pconfig,-pku,-prefetchwt1,-ptwrite,-rdpid,-rtm,-sgx,-sha,-shstk,-sse4a,-tbm,-vaes,-vpclmulqdq,-waitpkg,-wbnoinvd,-xop,-xsavec,-xsaves" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { argmemonly nounwind }
+attributes #4 = { nounwind readonly "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="broadwell" "target-features"="+adx,+aes,+avx,+avx2,+bmi,+bmi2,+cmov,+cx16,+f16c,+fma,+fsgsbase,+fxsr,+invpcid,+lzcnt,+mmx,+movbe,+pclmul,+popcnt,+prfchw,+rdrnd,+rdseed,+sahf,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+ssse3,+x87,+xsave,+xsaveopt,-avx512bitalg,-avx512bw,-avx512cd,-avx512dq,-avx512er,-avx512f,-avx512ifma,-avx512pf,-avx512vbmi,-avx512vbmi2,-avx512vl,-avx512vnni,-avx512vpopcntdq,-cldemote,-clflushopt,-clwb,-clzero,-fma4,-gfni,-lwp,-movdir64b,-movdiri,-mwaitx,-pconfig,-pku,-prefetchwt1,-ptwrite,-rdpid,-rtm,-sgx,-sha,-shstk,-sse4a,-tbm,-vaes,-vpclmulqdq,-waitpkg,-wbnoinvd,-xop,-xsavec,-xsaves" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #5 = { nounwind }
 attributes #6 = { nounwind readonly }
 
@@ -2434,4 +2403,4 @@ attributes #6 = { nounwind readonly }
 !llvm.ident = !{!1}
 
 !0 = !{i32 1, !"wchar_size", i32 4}
-!1 = !{!"clang version 6.0.0-1ubuntu2 (tags/RELEASE_600/final)"}
+!1 = !{!"clang version 7.0.0-3~ubuntu0.18.04.1 (tags/RELEASE_700/final)"}
