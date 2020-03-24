@@ -7,7 +7,7 @@ import time
 import timeit
 import subprocess
 import resource
-from ctypes import CFUNCTYPE, c_int32
+from pathlib import Path
 
 import gym
 import llvmlite.binding as llvm
@@ -25,7 +25,7 @@ NB_RUNS = 3
 
 class LLVMEnv(gym.Env):
 
-    def __init__(self, file_path, timer, onehot=False, reward_scaler=1e6, op_age=min):
+    def __init__(self, file_path, timer, onehot=False, reward_scaler=1e6, op_age=min, save_ll=False):
         super(LLVMEnv, self).__init__()
 
         self.file_path = file_path
@@ -35,6 +35,7 @@ class LLVMEnv(gym.Env):
         self.extremum = op_age
         self.onehot = onehot
         self.MAX_AGE = 10
+        self.save_ll = save_ll
 
         self.instr_to_opcode = {
             "alloca": 1,
@@ -117,7 +118,7 @@ class LLVMEnv(gym.Env):
 
         if done:
             next_state = None
-            self.run_time = self.llvm.run(self.timer)
+            self.run_time = self.llvm.run(self.timer, self.save_ll)
             reward = int(50 -  (self.run_time*self.reward_scaler))
             print(f"[episode done] reward: {reward} -- nb. steps: {self.curr_step} -- avg. shedul. instr.: {np.mean(self.nb_shedulables)} -- run time: {self.run_time} ")
         else:
@@ -422,17 +423,20 @@ class LLVMController:
         self.index_file_start = 0
 
 
-    def run(self, timer):
+    def run(self, timer, save=False):
         print("[env]: running code for evalution...")
         # create llvm file
         print(self.string_file == self.original_file)
         with open("llvm_file.ll", "w") as text_file:
             text_file.write(self.string_file)
+    
+
         # compile it using clang
         subprocess.run(["clang-7", 
                         "-o", "res", 
-                        "llvm_file.ll", 
-                        # "-mllvm", "-enable-misched=false",
+                        "llvm_file.ll",
+                        "-march=native",
+                        "-mllvm", "-enable-misched=false",
                         "-lm",
                         ])
         # time program
@@ -453,6 +457,13 @@ class LLVMController:
         if not are_equals("reference", "rendered_scene"):
             print("program output problem")
             exit()
+
+
+        if save:
+            Path("saved_ll/").mkdir(parents=True, exist_ok=True)
+            with open(f"saved_ll/{str(round(np.mean(times), 4))}.ll", "w") as text_file:
+                text_file.write(self.string_file)
+
         return np.mean(times)
 
     
