@@ -19,7 +19,7 @@ from gym import spaces
 from .utils import * 
 from .parse_llvm import LLVMParser
 
-NB_RUNS = 3
+NB_RUNS = 30
 
 
 
@@ -89,8 +89,8 @@ class LLVMEnv(gym.Env):
     def add_instruction(self):
 
         self.llvm.curr_instr_graph.remove_node(self.selected_instruction)
-        if self.selected_instruction.opcode in MEMORY_INSTR:
-            self.llvm.curr_memory_graph.remove_node(self.selected_instruction)
+        # if self.selected_instruction.opcode in MEMORY_INSTR:
+        #     self.llvm.curr_memory_graph.remove_node(self.selected_instruction)
 
         self.llvm.scheduled_instructions.append(self.selected_instruction)
         # update the schedulable instruction list
@@ -119,7 +119,7 @@ class LLVMEnv(gym.Env):
         if done:
             next_state = None
             self.run_time = self.llvm.run(self.timer, self.save_ll)
-            reward = int(50 -  (self.run_time*self.reward_scaler))
+            reward = int(30 -  (round(self.run_time,2)*self.reward_scaler))
             print(f"[episode done] reward: {reward} -- nb. steps: {self.curr_step} -- avg. shedul. instr.: {np.mean(self.nb_shedulables)} -- run time: {self.run_time} ")
         else:
             reward = 0
@@ -292,10 +292,14 @@ class LLVMController:
         return self.functions[self.curr_function].blocks[self.curr_block]
 
     def init_new_block(self):
+        self.new_block = True
         self.scheduled_instructions = []
         self.block_instructions = self.get_block_instructions()
         self.curr_instr_graph = self.instr_graphs[self.curr_function][self.curr_block].copy()
         self.curr_memory_graph = self.memory_graphs[self.curr_function][self.curr_block].copy()
+
+        self.scheduled_instructions.append(self.block_instructions[0])
+        self.curr_instr_graph.remove_node(self.block_instructions[0])
 
     def update_counters(self):
         self.curr_block += 1
@@ -330,8 +334,8 @@ class LLVMController:
         return self.schedulable_instructions
 
     def is_schedulable(self, instruction):
-        if instruction.opcode in MEMORY_INSTR and self.curr_memory_graph.in_degree(instruction) != 0:
-            return False
+        # if instruction.opcode in MEMORY_INSTR and self.curr_instr_graph.in_degree(instruction) != 0:
+        #     return False
         if self.curr_instr_graph.in_degree(instruction) != 0:
             return False
         return True
@@ -432,7 +436,8 @@ class LLVMController:
     
 
         # compile it using clang
-        subprocess.run(["clang-7", 
+        subprocess.run(["clang-9",
+                        "-O2",
                         "-o", "res", 
                         "llvm_file.ll",
                         "-march=native",
@@ -464,6 +469,6 @@ class LLVMController:
             with open(f"saved_ll/{str(round(np.mean(times), 4))}.ll", "w") as text_file:
                 text_file.write(self.string_file)
 
-        return np.mean(times)
+        return min(times)
 
     

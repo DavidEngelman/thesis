@@ -25,7 +25,7 @@ def create_dependency_graphs(block):
         if i.opcode in MEMORY_INSTR:
             mem_g.add_node(i)
             # add dependency between node i and all memory node before it
-            if i.opcode not in ["phi", "store"]:
+            if i.opcode not in ["store", "phi"]:
                 instr_g.add_edges_from([(node, i) for node in list(mem_g.nodes)[:-1]])
             
     # create instr dependencies

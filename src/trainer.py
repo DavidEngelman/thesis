@@ -21,9 +21,8 @@ from stable_baselines.common.callbacks import BaseCallback
 
 from .env import LLVMEnv
 
-import linecache
 import os
-import tracemalloc
+import json
 
 
 TOTAL_RUNS = 10
@@ -68,7 +67,6 @@ def train(model, env, episodes):
         while not done:
             action, _states = model.predict(obs)
             obs, reward, done, info = env.step(action)
-            env.render()
 
         avg_ep_rewards*= 0.95
         avg_ep_rewards += 0.05 * reward
@@ -80,6 +78,9 @@ def train(model, env, episodes):
         learning_stats["avg_ep_rewards"][i] = avg_ep_rewards
         learning_stats["run_time"][i] = run_time
         learning_stats["avg_run_time"][i] = avg_run_time
+    
+    if i % 50 == 0:
+            print(f"Episode {i}: avg ep reward: {avg_ep_rewards} -- avg run time: {avg_run_time}")
 
 
     return learning_stats
@@ -131,7 +132,7 @@ if __name__ == "__main__":
 
     
     if args.algo == "dqn":
-        env = DummyVecEnv([lambda: env])
+        # env = DummyVecEnv([lambda: env])
         model = DQN(CustomDQNPolicy, env, gamma=0.999, prioritized_replay=True)
 
     elif args.algo == "ppo":
@@ -141,6 +142,7 @@ if __name__ == "__main__":
     print("model created")
     
     total_episodes = args.episodes
-    results = parallelize(add_job, numProcesses=args.nb_processes)
-    saveComplexJson("results", results)
+    learning_stats = train(model, env, 5000)
+    with open(f'{exp_name}.json', 'w') as fp:
+        json.dump(learning_stats, fp)
 
