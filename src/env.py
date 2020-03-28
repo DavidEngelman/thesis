@@ -38,13 +38,24 @@ class LLVMEnv(gym.Env):
         self.save_ll = save_ll
 
         self.instr_to_opcode = {
-            "alloca": 1,
+            "call": 1,
+            "tail": 1,
+
             "store": 2,
             "load": 3,
+
             "fadd": 4,
+            "add": 4,
+
             "fsub": 5,
+            "sub": 5,
+
             "fmul": 6,
+            "mul": 6,
+
             "fdiv": 7,
+            "div": 7,
+
             "other": 8
         }
 
@@ -81,8 +92,8 @@ class LLVMEnv(gym.Env):
         self.selected_instruction = None  # current selected instruction
         self.schedulable_instructions = None
 
-        # last 2 scheduled instructions's opcode
-        self.history = collections.deque([0, 0], 2)
+        # last 3 scheduled instructions's opcode
+        self.history = collections.deque([0, 0, 0], 3)
 
         self.llvm = LLVMController(self.file_path)
 
@@ -94,7 +105,9 @@ class LLVMEnv(gym.Env):
 
         self.llvm.scheduled_instructions.append(self.selected_instruction)
         # update the schedulable instruction list
-        self.schedulable_instructions = self.llvm.find_schedulable_instructions()
+        self.schedulable_instructions, reset_history = self.llvm.find_schedulable_instructions()
+        if reset_history:
+            self.history = collections.deque([0, 0, 0], 3)
         self.history.append(self.to_opcode(self.selected_instruction))
         
 
@@ -119,7 +132,8 @@ class LLVMEnv(gym.Env):
         if done:
             next_state = None
             self.run_time = self.llvm.run(self.timer, self.save_ll)
-            reward = int(30 -  (round(self.run_time,2)*self.reward_scaler))
+            # reward = int(20 -  (round(self.run_time,3)*self.reward_scaler))
+            reward = 20 - round((self.run_time - int(self.run_time)) * 100, 0)
             print(f"[episode done] reward: {reward} -- nb. steps: {self.curr_step} -- avg. shedul. instr.: {np.mean(self.nb_shedulables)} -- run time: {self.run_time} ")
         else:
             reward = 0
@@ -134,8 +148,6 @@ class LLVMEnv(gym.Env):
         not_encoded = list()
         state.extend(self.history)
         not_encoded.extend((self.history))
-        state.append(next_instruction_opcode)
-        not_encoded.append(next_instruction_opcode)
         if self.onehot:
             state = self.oneHotInstructions(state)
 
@@ -220,8 +232,8 @@ class LLVMEnv(gym.Env):
         self.llvm.reset()
         self.selected_instruction = None
         self.schedulable_instructions = None
-        self.history = collections.deque([0, 0], 2)
-        self.schedulable_instructions = self.llvm.find_schedulable_instructions()
+        self.history = collections.deque([0, 0, 0], 3)
+        self.schedulable_instructions, _ = self.llvm.find_schedulable_instructions()
         self.nb_shedulables = []
         next_instruction_opcode = self.select_next_instruction(self.schedulable_instructions)
         next_state = self.update_state(next_instruction_opcode)
@@ -295,11 +307,9 @@ class LLVMController:
         self.new_block = True
         self.scheduled_instructions = []
         self.block_instructions = self.get_block_instructions()
+        self.terminal_instr = self.block_instructions[-1]
         self.curr_instr_graph = self.instr_graphs[self.curr_function][self.curr_block].copy()
         self.curr_memory_graph = self.memory_graphs[self.curr_function][self.curr_block].copy()
-
-        self.scheduled_instructions.append(self.block_instructions[0])
-        self.curr_instr_graph.remove_node(self.block_instructions[0])
 
     def update_counters(self):
         self.curr_block += 1
@@ -310,28 +320,30 @@ class LLVMController:
             self.curr_function += 1
             self.reordered_blocks = []
 
-    def terminate_block(self):
-        # add the terminator instruction
-        self.scheduled_instructions.append(self.block_instructions[-1])
-        self.reordered_blocks.append(self.scheduled_instructions)
-
     def find_schedulable_instructions(self):
-        # check if we need to start to schedule a new block
-        while len(self.scheduled_instructions) == (len(self.block_instructions) - 1):
-            self.terminate_block()
+        '''
+        Return a list of shedulable instructions to show to the agent.
+        Additionaly, return a bool to indicate if the history has to be reset (when a new block start)
+        '''
+        reinit_history = False #wether the env has to reinit the history (if a new block start)
+        while len(self.scheduled_instructions) == (len(self.block_instructions)):
+            self.reordered_blocks.append(self.scheduled_instructions)
             self.update_counters()
             if self.curr_function < len(self.functions):
                 self.init_new_block()
+                reinit_history = True
             else:
                 return []
 
         self.schedulable_instructions = []
 
-        for instruction in list(self.curr_instr_graph.nodes())[:-1]:
+        for instruction in list(self.curr_instr_graph.nodes()):
             if self.is_schedulable(instruction):
                 self.schedulable_instructions.append(instruction)
+        
+        self.check_schedulables()
 
-        return self.schedulable_instructions
+        return self.schedulable_instructions, reinit_history
 
     def is_schedulable(self, instruction):
         # if instruction.opcode in MEMORY_INSTR and self.curr_instr_graph.in_degree(instruction) != 0:
@@ -339,7 +351,24 @@ class LLVMController:
         if self.curr_instr_graph.in_degree(instruction) != 0:
             return False
         return True
+    
+    def check_schedulables(self):
+        """
+        if phi in schedulable instr: remove all others from schedulable list
+        if terminal instr in schedulable list and not the only one schedulabe, remove it.
+        so that phi instr will always remains a the top of a block, terminal instr at the end.
+        """
 
+        # check if phi and terminal instruction in schedulable instructions
+        for instr in self.schedulable_instructions:
+            if instr.opcode == "phi":
+                self.schedulable_instructions = [instr]
+                return
+            
+        # terminal instr only schedulable if its the only one schedulable
+        if self.terminal_instr in self.schedulable_instructions and len(self.schedulable_instructions) != 1:
+            self.schedulable_instructions.remove(self.terminal_instr)
+ 
 
     def write_reordered_function(self):
         
@@ -368,8 +397,7 @@ class LLVMController:
         # current function last block last instruction
         function_last_instruction = self.reordered_blocks[-1][-1].str_repr
         function_start_index = self.string_file.index(function_first_instruction, self.function_start)
-       
-        # print(self.string_file)
+        
         function_end_index = self.string_file.index(function_last_instruction, function_start_index) + len(function_last_instruction) - 1
         self.function_start = function_end_index
 
@@ -466,7 +494,7 @@ class LLVMController:
 
         if save:
             Path("saved_ll/").mkdir(parents=True, exist_ok=True)
-            with open(f"saved_ll/{str(round(np.mean(times), 4))}.ll", "w") as text_file:
+            with open(f"saved_ll/{str(round(min(times), 4))}.ll", "w") as text_file:
                 text_file.write(self.string_file)
 
         return min(times)

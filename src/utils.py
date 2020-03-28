@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 
 
 MEMORY_INSTR = ["load", "store", "getelementptr", "bitcast", "phi",  "call", "tail"]
-# MEMORY_INSTR = ["alloca", "load", "store", "fptoui", "getelementptr", "zext", "sext", "fptrunc", "fpext","fptosi", "uitofp", "sitofp", "ptrtoint", "inttoptr", "bitcast",  "icmp", "fcmp", "phi",  "call", "tail", "select", "insertelement", "shufflevector", "extractelement", "switch"]
+# MEMORY_INSTR = ["alloca", "load", "store", "fptoui", "getelementptr", "zext", "sext", "fptrunc", "fpext","fptosi", "uitofp", "sitofp", "ptrtoint", "inttoptr", "bitcast",  "icmp", "fcmp", "phi",  "call", "tail", "select", "switch"]
+# MEMORY_INSTR = ["load", "store", "getelementptr", "bitcast", "phi",  "call", "tail", "select", "switch"]
 
 def reformat_string(s):
     # # handle struct variable case:
@@ -25,7 +26,8 @@ def create_dependency_graphs(block):
         if i.opcode in MEMORY_INSTR:
             mem_g.add_node(i)
             # add dependency between node i and all memory node before it
-            if i.opcode not in ["store", "phi"]:
+            # "store", "phi"
+            if i.opcode not in ["store, phi"]:
                 instr_g.add_edges_from([(node, i) for node in list(mem_g.nodes)[:-1]])
             
     # create instr dependencies

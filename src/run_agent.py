@@ -87,7 +87,7 @@ def main():
 
     elif args.algo == "ppo":
         env = DummyVecEnv([lambda: env]*16)
-        model = PPO2(MlpPolicy, env, gamma=0.999, n_steps=150, noptepochs=5, tensorboard_log=log_file)
+        model = PPO2(MlpPolicy, env, gamma=0.999, n_steps=150, noptepochs=5, tensorboard_log=log_file, verbose=1, ent_coef=0.02, learning_rate=3e-4)
 
     print("model created")
 

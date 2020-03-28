@@ -15,7 +15,9 @@ parser.add_argument('--op-age', help='extremum function to be used for the age o
                     default=min)
 parser.add_argument('--onehot', help='if true,  onehot encode the operand in the state', 
                     action='store_true', default=False)
-parser.add_argument('--nolog', action='store_true', default=True)
+parser.add_argument('--nolog', action='store_true', default=False)
+parser.add_argument('--save', action='store_true', default=False, help='save the ".ll" file')
+
 
 args = parser.parse_args()
 
@@ -25,16 +27,16 @@ env = LLVMEnv(
                 timer=args.timer, 
                 onehot=args.onehot, 
                 reward_scaler=args.r_scaler,
-                op_age=args.op_age
+                op_age=args.op_age,
+                save_ll=args.save,
             )
 
-
-for _ in range(1):
+for _ in range(5):
     n_state = env.reset()
     done = False
+    env.render()
     while not done:
         action = env.action_space.sample()
-        action = 0
         n_state, reward, done, _ = env.step(action)
 
     print("episode done.")
