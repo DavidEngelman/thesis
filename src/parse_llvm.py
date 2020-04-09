@@ -8,6 +8,7 @@ class Instruction:
     var_name: str
     operands: List
     opcode: str
+    seen_count: int = 0 # count the number of times an instruction has been shown to the agent 
 
     def __str__(self):
         return f"{self.str_repr}\n"
@@ -139,7 +140,7 @@ class LLVMParser:
         var_names = set(re.findall(r"%[0-9]+", string))
         for instr in curr_block:
             if instr.var_name in var_names:
-                operands.append(instr.str_repr)
+                operands.append(instr)
         return operands
 
 

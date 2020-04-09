@@ -24,10 +24,12 @@ def create_dependency_graphs(block):
     for i in block:
         instr_g.add_node(i)
         if i.opcode in MEMORY_INSTR:
-            mem_g.add_node(i)
-            # add dependency between node i and all memory node before it
-            # "store", "phi"
-            if i.opcode not in ["store, phi"]:
+            mem_g.add_node(i)        
+            if i.opcode == "load":
+                # add dependency between itself and all other instruction that are not "load"
+                instr_g.add_edges_from([(node, i) for node in list(mem_g.nodes)[:-1] if node.opcode != "load"])
+
+            elif i.opcode not in ["store", "phi"]:
                 instr_g.add_edges_from([(node, i) for node in list(mem_g.nodes)[:-1]])
             
     # create instr dependencies
@@ -47,11 +49,10 @@ def create_dependency_graphs(block):
     # plt.savefig('memory.png')
     
     # exit()
-    return instr_g, mem_g
-
+    return instr_g
 
 def depends_on(instr1, instr2):
-    return instr2.str_repr in instr1.operands
+    return instr2 in instr1.operands
 
 # def get_load_dependencies(instr, others, block):
 #     res = []

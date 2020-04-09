@@ -1,5 +1,6 @@
 import argparse
 from .env import *
+import pickle
 
 
 
@@ -17,26 +18,39 @@ parser.add_argument('--onehot', help='if true,  onehot encode the operand in the
                     action='store_true', default=False)
 parser.add_argument('--nolog', action='store_true', default=False)
 parser.add_argument('--save', action='store_true', default=False, help='save the ".ll" file')
+parser.add_argument('--remote', action='store_true', default=False)
+parser.add_argument('--noage', action='store_false', default=True)
+
+
 
 
 args = parser.parse_args()
 
 # Create and wrap the environment
 env = LLVMEnv(
-                args.filepath, 
-                timer=args.timer, 
-                onehot=args.onehot, 
-                reward_scaler=args.r_scaler,
-                op_age=args.op_age,
-                save_ll=args.save,
-            )
+        args.filepath, 
+        timer=args.timer, 
+        onehot=args.onehot, 
+        reward_scaler=args.r_scaler,
+        op_age=args.op_age,
+        save_ll=args.save,
+        remote=args.remote,
+        with_age=args.noage
+    )
 
-for _ in range(5):
+times = {"min": [], "mean": [], "std": []}
+for i in range(1000):
+    print(i)
     n_state = env.reset()
     done = False
-    env.render()
     while not done:
         action = env.action_space.sample()
-        n_state, reward, done, _ = env.step(action)
+        n_state, reward, done, info = env.step(action)
+        
+    
+    times["min"].append(info["episode"]["run_time"][0])
+    times["mean"].append(info["episode"]["run_time"][1])
+    times["std"].append(info["episode"]["run_time"][2])
 
-    print("episode done.")
+print(times)
+pickle.dump(times, open("cray_pi_100000", "wb"))

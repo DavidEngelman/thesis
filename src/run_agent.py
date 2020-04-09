@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+from pathlib import Path
 
 import gym
 import numpy as np
@@ -8,7 +9,6 @@ import tensorflow as tf
 
 # from stable_baselines.results_plotter import load_results, ts2xy
 import stable_baselines
-from stable_baselines import DQN, PPO2
 from stable_baselines.bench import Monitor
 from stable_baselines.common.env_checker import check_env
 from stable_baselines.common.policies import MlpPolicy
@@ -17,12 +17,11 @@ from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines.common.callbacks import BaseCallback
 
 from .env import LLVMEnv
+from .ppo2 import CustomPPO2
+from .dqn import CustomDQN
 
-import linecache
+
 import os
-import tracemalloc
-
-
 
 
 
@@ -56,6 +55,10 @@ def main():
                         action='store_true', default=False)
     parser.add_argument('--nolog', action='store_true', default=False)
     parser.add_argument('--save', action='store_true', default=False, help='save the ".ll" file')
+    parser.add_argument('--remote', action='store_true', default=False)
+    parser.add_argument('--noage', action='store_false', default=True)
+
+
 
 
     args = parser.parse_args()
@@ -68,6 +71,8 @@ def main():
                     reward_scaler=args.r_scaler,
                     op_age=args.op_age,
                     save_ll=args.save,
+                    remote=args.remote,
+                    with_age=args.noage
                 )
 
 
@@ -76,18 +81,18 @@ def main():
     filename = args.filepath.split("/")[-1].split(".")[0]
     exp_name = f"{filename}_{args.algo}_oh_{str(args.onehot)}"
 
-    log_file = 'logs/'
+    log_file = args.algo
     if args.nolog:
         log_file = None
     
 
     if args.algo == "dqn":
         env = DummyVecEnv([lambda: env])
-        model = DQN(CustomDQNPolicy, env, gamma=0.999, prioritized_replay=True, verbose=1, tensorboard_log=log_file)
+        model = CustomDQN(CustomDQNPolicy, env, gamma=0.999, prioritized_replay=True, verbose=1, tensorboard_log=log_file)
 
     elif args.algo == "ppo":
         env = DummyVecEnv([lambda: env]*16)
-        model = PPO2(MlpPolicy, env, gamma=0.999, n_steps=150, noptepochs=5, tensorboard_log=log_file, verbose=1, ent_coef=0.02, learning_rate=3e-4)
+        model = CustomPPO2(MlpPolicy, env, gamma=0.999, n_steps=150, noptepochs=5, tensorboard_log=log_file, verbose=2)
 
     print("model created")
 
@@ -95,6 +100,15 @@ def main():
     time_steps = int(args.steps)
     print(time_steps)
     model.learn(total_timesteps=int(time_steps), tb_log_name=exp_name)
+
+    i = 0
+    fname = f"./saved_models/{exp_name}_{time_steps}_{i}.zip"
+    while os.path.exists(fname) :
+        print("here")
+        i+=1
+        fname = f"./saved_models/{exp_name}_{time_steps}_{i}.zip"
+
+    model.save(fname)
 
 
 
