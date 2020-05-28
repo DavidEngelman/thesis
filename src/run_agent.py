@@ -11,10 +11,14 @@ import tensorflow as tf
 import stable_baselines
 from stable_baselines.bench import Monitor
 from stable_baselines.common.env_checker import check_env
-from stable_baselines.common.policies import MlpPolicy
+from stable_baselines.common.policies import MlpPolicy, MlpLstmPolicy
 from stable_baselines.deepq.policies import FeedForwardPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines.common.callbacks import BaseCallback
+from stable_baselines.common.callbacks import CheckpointCallback
+
+from stable_baselines import PPO2
+
 
 from .env import LLVMEnv
 from .ppo2 import CustomPPO2
@@ -56,12 +60,23 @@ def main():
     parser.add_argument('--nolog', action='store_true', default=False)
     parser.add_argument('--save', action='store_true', default=False, help='save the ".ll" file')
     parser.add_argument('--remote', action='store_true', default=False)
+    parser.add_argument('--ip', default=None, type=str)
+
     parser.add_argument('--noage', action='store_false', default=True)
+    parser.add_argument('--load', default=None,
+                          help='load a model to resume training')
 
 
 
 
     args = parser.parse_args()
+
+    if args.remote and args.ip == None:
+        print("please use --ip to specify the address of the remote device")
+        exit()
+
+    if not(args.remote) and  args.ip:
+        print("WARNING: if you want to time the program in the remote device please add --remote")
 
     # Create and wrap the environment
     env = LLVMEnv(
@@ -72,7 +87,8 @@ def main():
                     op_age=args.op_age,
                     save_ll=args.save,
                     remote=args.remote,
-                    with_age=args.noage
+                    with_age=args.noage,
+                    ip_address=args.ip
                 )
 
 
@@ -88,27 +104,28 @@ def main():
 
     if args.algo == "dqn":
         env = DummyVecEnv([lambda: env])
-        model = CustomDQN(CustomDQNPolicy, env, gamma=0.999, prioritized_replay=True, verbose=1, tensorboard_log=log_file)
+        model = CustomDQN(CustomDQNPolicy, env, gamma=0.999, prioritized_replay=True, verbose=1)
 
     elif args.algo == "ppo":
-        env = DummyVecEnv([lambda: env]*16)
-        model = CustomPPO2(MlpPolicy, env, gamma=0.999, n_steps=150, noptepochs=5, tensorboard_log=log_file, verbose=2)
+        print("creating model...")
+        env = DummyVecEnv([lambda: env]*8)
+        model = PPO2(MlpLstmPolicy, env, gamma=0.999, n_steps=1000, noptepochs=5, verbose=2, learning_rate=1e-4)
+        print("done")
+
+
+
+    checkpoint_callback = CheckpointCallback(save_freq=10000, save_path='./checkpoints',
+                                         name_prefix=exp_name)
+ 
 
     print("model created")
 
     # Train the agent
     time_steps = int(args.steps)
     print(time_steps)
-    model.learn(total_timesteps=int(time_steps), tb_log_name=exp_name)
+    model.learn(total_timesteps=int(time_steps), callback=checkpoint_callback)
 
-    i = 0
-    fname = f"./saved_models/{exp_name}_{time_steps}_{i}.zip"
-    while os.path.exists(fname) :
-        print("here")
-        i+=1
-        fname = f"./saved_models/{exp_name}_{time_steps}_{i}.zip"
-
-    model.save(fname)
+    
 
 
 

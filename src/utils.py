@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-MEMORY_INSTR = ["load", "store", "getelementptr", "bitcast", "phi",  "call", "tail"]
+MEMORY_INSTR = ["load", "store", "getelementptr", "bitcast",  "call", "tail"]
 # MEMORY_INSTR = ["alloca", "load", "store", "fptoui", "getelementptr", "zext", "sext", "fptrunc", "fpext","fptosi", "uitofp", "sitofp", "ptrtoint", "inttoptr", "bitcast",  "icmp", "fcmp", "phi",  "call", "tail", "select", "switch"]
 # MEMORY_INSTR = ["load", "store", "getelementptr", "bitcast", "phi",  "call", "tail", "select", "switch"]
 
@@ -28,9 +28,9 @@ def create_dependency_graphs(block):
             if i.opcode == "load":
                 # add dependency between itself and all other instruction that are not "load"
                 instr_g.add_edges_from([(node, i) for node in list(mem_g.nodes)[:-1] if node.opcode != "load"])
-
-            elif i.opcode not in ["store", "phi"]:
-                instr_g.add_edges_from([(node, i) for node in list(mem_g.nodes)[:-1]])
+            
+            elif i.opcode not in ["store"]:
+                instr_g.add_edges_from([(node, i) for node in list(mem_g.nodes)[:-1] if not(i.opcode == "getelemptr" and node.opcode == "getelementptr")])
             
     # create instr dependencies
     nodes_combinations = it.combinations(instr_g.nodes, 2)

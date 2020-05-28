@@ -19,12 +19,20 @@ parser.add_argument('--onehot', help='if true,  onehot encode the operand in the
 parser.add_argument('--nolog', action='store_true', default=False)
 parser.add_argument('--save', action='store_true', default=False, help='save the ".ll" file')
 parser.add_argument('--remote', action='store_true', default=False)
+parser.add_argument('--ip', default=None, type=str)
 parser.add_argument('--noage', action='store_false', default=True)
 
 
 
 
 args = parser.parse_args()
+
+if args.remote and args.ip == None:
+    print("please use --ip to specify the address of the remote device")
+    exit()
+
+if not(args.remote) and  args.ip:
+    print("WARNING: if you want to time the program in the remote device please add --remote")
 
 # Create and wrap the environment
 env = LLVMEnv(
@@ -35,11 +43,12 @@ env = LLVMEnv(
         op_age=args.op_age,
         save_ll=args.save,
         remote=args.remote,
-        with_age=args.noage
+        with_age=args.noage,
+        ip_address=args.ip
     )
 
-times = {"min": [], "mean": [], "std": []}
-for i in range(1000):
+res = {"min": [], "mean": [], "std": [], "r": [], "ts": [],}
+for i in range(50):
     print(i)
     n_state = env.reset()
     done = False
@@ -48,9 +57,12 @@ for i in range(1000):
         n_state, reward, done, info = env.step(action)
         
     
-    times["min"].append(info["episode"]["run_time"][0])
-    times["mean"].append(info["episode"]["run_time"][1])
-    times["std"].append(info["episode"]["run_time"][2])
+    res["min"].append(info["episode"]["run_time"][0])
+    res["mean"].append(info["episode"]["run_time"][1])
+    res["std"].append(info["episode"]["run_time"][2])
+    res["r"].append(reward)
+    res["ts"].append(info["episode"]["l"])
 
-print(times)
-pickle.dump(times, open("cray_pi_100000", "wb"))
+
+
+pickle.dump(res, open("cray_c_benchmark_10_rpi_cpu_cycles_O0", "wb"))

@@ -31,7 +31,6 @@ class CustomPPO2(PPO2):
         with SetVerbosity(self.verbose), TensorboardWriter(self.graph, self.tensorboard_log, tb_log_name, new_tb_log) \
                 as writer:
             self._setup_learn()
-            print(writer)
             t_first_start = time.time()
             n_updates = total_timesteps // self.n_batch
 
@@ -55,7 +54,6 @@ class CustomPPO2(PPO2):
                 rollout = self.runner.run(callback)
                 # Unpack
                 obs, returns, masks, actions, values, neglogpacs, states, ep_infos, true_reward = rollout
-                print("infos")
 
                 # Early stopping due to the callback
                 if not self.runner.continue_training:
@@ -100,16 +98,12 @@ class CustomPPO2(PPO2):
                 t_now = time.time()
                 fps = int(self.n_batch / (t_now - t_start))
 
-                print(self.episode_reward)
-                print(self.ep_info_buf)
+
                 if writer is not None:
-                    print("here")
-                    print((true_reward))
                     total_episode_reward_logger(self.episode_reward,
                                                 true_reward.reshape((self.n_envs, self.n_steps)),
                                                 masks.reshape((self.n_envs, self.n_steps)),
                                                 writer, self.num_timesteps)
-                    print("done")
 
                 if self.verbose >= 1 and (update % log_interval == 0 or update == 1):
                     explained_var = explained_variance(values, returns)

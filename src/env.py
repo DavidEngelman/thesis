@@ -9,6 +9,7 @@ import subprocess
 import resource
 from pathlib import Path
 import paramiko
+from scp import SCPClient
 
 import gym
 import llvmlite.binding as llvm
@@ -20,13 +21,13 @@ from gym import spaces
 from .utils import * 
 from .parse_llvm import LLVMParser
 
-NB_RUNS = 100
+NB_RUNS = 11
 
 
 
 class LLVMEnv(gym.Env):
 
-    def __init__(self, file_path, timer, onehot=False, reward_scaler=1e6, op_age=min, save_ll=False, remote=False, with_age=True):
+    def __init__(self, file_path, timer, onehot=False, reward_scaler=1e6, op_age=min, save_ll=False, remote=False, with_age=True, ip_address=None):
         super(LLVMEnv, self).__init__()
 
         self.file_path = file_path
@@ -41,9 +42,11 @@ class LLVMEnv(gym.Env):
         self.ssh_con = False
         print(self.with_age)
         if remote:
+            self.ip_address = ip_address
             self.ssh_con = paramiko.SSHClient()
             self.ssh_con.load_system_host_keys()
-            self.ssh_con.connect("192.168.1.57", username="ubuntu", password="qwertyuiop")
+            self.ssh_con.connect(self.ip_address, username="ubuntu", password="qwertyuiop")
+            self.scp_con = SCPClient(self.ssh_con.get_transport())
 
         self.instr_to_opcode = {
             "call": 1,
@@ -63,12 +66,13 @@ class LLVMEnv(gym.Env):
 
         # self.instr_to_opcode = {
         #     "alloca": 1,
+        #     "alloca": 1,
         #     "store": 2,
         #     "load": 3,
-        #     "add": 4,
-        #     "sub": 5,
-        #     "mul": 6,
-        #     "div": 7,
+        #     "fpext": 4,
+        #     "fmul": 5,
+        #     "fdiv": 6,
+        #     "sitofp": 7,
         #     "other": 8
         # }
 
@@ -102,8 +106,14 @@ class LLVMEnv(gym.Env):
                             np.array([1]*4)
                 ))
             else:
-                low = np.concatenate(np.array([0]*3*(len(self.instr_to_opcode))), np.array([0]*4) )
-                high = np.concatenate(np.array([0]*3*(len(self.instr_to_opcode))), np.array([1]*4) )
+                low = np.concatenate((
+                    np.array([0]*3*(len(self.instr_to_opcode))), 
+                    np.array([0]*4) 
+                ))
+                high = np.concatenate((
+                    np.array([1]*3*(len(self.instr_to_opcode))), 
+                    np.array([1]*4) 
+                ))
 
             self.observation_space = spaces.Box(low=low, high=high, dtype=int)
 
@@ -115,6 +125,10 @@ class LLVMEnv(gym.Env):
         self.history = collections.deque([0, 0], 2)
 
         self.llvm = LLVMController(self.file_path)
+
+        print("timing original file")
+        self.original_time = self.llvm.run(self.timer, self.curr_step, False, self.ssh_con, self.scp_con, self.ip_address, time_original=True)
+        print(f"original program time is: {self.original_time}s")
 
     def add_instruction(self):
 
@@ -138,7 +152,7 @@ class LLVMEnv(gym.Env):
             done = True
             next_state = None
             reward = 0
-            print(f"[episode done] reward: {reward} -- nb. steps: {self.curr_step} -- avg. nb of  shedul. instr.: {np.mean(self.nb_shedulables)}")
+            # print(f"[episode done] reward: {reward} -- nb. steps: {self.curr_step} -- avg. nb of  shedul. instr.: {np.mean(self.nb_shedulables)}")
             return next_state, reward, done, {}
 
 
@@ -156,8 +170,13 @@ class LLVMEnv(gym.Env):
             if 1000<self.curr_step<5000 or 100000<self.curr_step<105000 or 90000<self.curr_step<905000:
                 dump=True
 
-            self.run_time = self.llvm.run(self.timer, self.curr_step, False, self.ssh_con)
+            self.run_time = self.llvm.run(self.timer, self.curr_step, False, self.ssh_con, self.scp_con, self.ip_address)
             min_rt = self.run_time[0]
+            mean_rt = self.run_time[1]
+
+            original_min_rt = self.original_time[0]
+            original_mean_rt = self.original_time[1]
+
 
             print(self.run_time)
             
@@ -166,8 +185,31 @@ class LLVMEnv(gym.Env):
             # reward = 1 if self.run_time < 0.433 else 0
             # reward = int(50 - self.reward_scaler*self.run_time)
             # reward = int(30 - self.reward_scaler*self.run_time)
-            reward = int(380 - self.reward_scaler*round(min_rt,2))
-            print(f"[episode done] reward: {reward} -- nb. steps: {self.curr_step} -- avg. shedul. instr.: {np.mean(self.nb_shedulables)} -- run time: {self.run_time} ")
+            #reward = int(380 - self.reward_scaler*round(min_rt,2))
+
+            # if  self.reward_scaler*round(min_rt,2) > 370:
+            #     reward = 0
+            # elif 365 <=self.reward_scaler*round(min_rt,2) <= 370:
+            #     reward = 2
+            
+            # elif 360 <=self.reward_scaler*round(min_rt,2) <= 365:
+            #     reward = 4
+            
+            # elif 355 <=self.reward_scaler*round(min_rt,2) <= 360:
+            #     reward = 6
+
+            # elif self.reward_scaler*round(min_rt,2) <= 355:
+            #     reward = 8
+
+            #reward =  (original_min_rt - min_rt)*self.reward_scaler
+            reward =  (original_min_rt - min_rt)/self.reward_scaler
+
+
+            # print(f"[episode done] reward: {reward} -- nb. steps: {self.curr_step} -- avg. shedul. instr.: {np.mean(self.nb_shedulables)} -- run time: {self.run_time} ")
+            print(f"Reward {reward}")
+            print(f"nb_steps {self.curr_step}")
+            print(f"Runtime {self.run_time}" )
+
         else:
             reward = 0
             next_instruction_opcode = self.select_next_instruction(self.schedulable_instructions)
@@ -295,11 +337,12 @@ class LLVMController:
         with open(file_path, 'r') as file:
             data = file.read()
 
-
-        self.mod = LLVMParser.parse(file_path)
+        self.file_path = file_path
+        self.mod = LLVMParser.parse(self.file_path)
         self.functions = self.mod.functions
         self.llvm_code = self.get_llvm_code()
         self.original_file = data
+        self.string_file = copy.deepcopy(self.original_file)
     
         self.instr_graphs = self.create_all_graphs()
 
@@ -318,6 +361,9 @@ class LLVMController:
 
         self.function_start = 0
         self.index_file_start = 0
+
+        self.avg_sched_per_bloc = 0
+
 
     def get_llvm_code(self):
         llvm_code= []
@@ -348,6 +394,7 @@ class LLVMController:
         return self.functions[self.curr_function].blocks[self.curr_block]
 
     def init_new_block(self):
+        self.avg_sched_per_bloc = 0
         self.new_block = True
         self.scheduled_instructions = []
         self.block_instructions = self.get_block_instructions()
@@ -508,44 +555,63 @@ class LLVMController:
 
 
 
-    def run(self, timer, step, save=False, ssh_con=False):
+    def run(self, timer, step, save=False, ssh_con=False, scp_con=None, ip_address=None, time_original=False):
         print("[env]: running code for evalution...")
         # create llvm file
         print(self.string_file == self.original_file)
         with open("llvm_file.ll", "w") as text_file:
             text_file.write(self.string_file)
         # compile it using clang
-        
-    
         if not ssh_con:
             # compile it using clang
-            subprocess.run(["clang-9",
-                        "-O2",
-                        "-o", "res",
-                        "llvm_file.ll", 
-                        #"c-ray/c-ray-f-2-O0.ll",
-                        "-march=native",
-                        "-mllvm", "-enable-misched=false",
-                        "-mllvm", "-enable-post-misched=false",
-                        "-lm",
-                        ])
+            if time_original:
+                subprocess.run(["clang-9",
+                            "-O0",
+                            "-o", "res",
+                            self.file_path,
+                            "-march=native",
+                            "-mllvm", "-enable-misched=false",
+                            "-mllvm", "-enable-post-misched=false",
+                            "-lm",
+                            ])
+            else:
+                subprocess.run(["clang-9",
+                            "-O0",
+                            "-o", "res",
+                            "llvm_file.ll", 
+                            # self.file_path,
+                            "-march=native",
+                            "-mllvm", "-enable-misched=false",
+                            "-mllvm", "-enable-post-misched=false",
+                            "-lm",
+                            ])
             # time program
             times = []
             # select only one cpu
             pid = os.getpid()
             os.sched_setaffinity(pid, {0})
             for _ in range(NB_RUNS):
-                usage_start = resource.getrusage(resource.RUSAGE_CHILDREN)
-                # subprocess.run(["./res"])
-                subprocess.run(["./res"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                usage_end = resource.getrusage(resource.RUSAGE_CHILDREN)
-                times.append(usage_end.ru_utime - usage_start.ru_utime)
+            #     usage_start = resource.getrusage(resource.RUSAGE_CHILDREN)
+            #     # subprocess.run(["./res"])
+            #     subprocess.run(["./res"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            #     usage_end = resource.getrusage(resource.RUSAGE_CHILDREN)
+            #     times.append(usage_end.ru_utime - usage_start.ru_utime)
+                p = subprocess.run(["sshpass", "-p", "mamouche97", "sudo", "perf", "stat", "-o", "data.txt", "./res"])
+                with open("data.txt", "r") as f:
+                    res = f.readlines()
+                res = res[9]
+                res = res.strip().split(" ")
+                res = res[0]
+                res = res.replace(",", "")
+                times.append(float(res))
             
             os.sched_setaffinity(pid, {0, 1, 2, 3})
 
-            if not are_equals("reference", "rendered_scene"):
-                print("program output problem")
-                exit()
+            # output_ok = are_equals("reference", "rendered_scene")
+            # print(f"output image correct : {output_ok}")
+            # if not are_equals("reference", "rendered_scene"):
+            #     print("program output problem")
+            #     exit()
 
 
             if save:
@@ -556,18 +622,24 @@ class LLVMController:
 
                 subprocess.run(["cp",  "res",  f"saved/dumpexec_{step}"])
 
-
+            times = times[1:]
             return min(times), np.mean(times), np.std(times)
         # remote
         else:
-            to_compile = "llvm_file.ll"
-            # to_compile = "c-ray-f-2-pi.ll"
+            original_file = self.file_path.split("/")[-1]
+            if time_original:
+                to_compile = original_file
+            else:
+                to_compile = "llvm_file.ll"
 
-
-            subprocess.run(["sshpass", "-p", "qwertyuiop", "scp", to_compile, "ubuntu@192.168.1.57:."], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            print("Running on pi")
+            # send file to rpi
+            if not time_original:
+                scp_con.put(to_compile, f"/home/ubuntu/")
+                # subprocess.run(["sshpass", "-p", "qwertyuiop", "scp", "-4", to_compile, f"ubuntu@{str(ip_address)}:/home/ubuntu/"])
+                
             ssh_con.exec_command("cd thesis", get_pty=True)
-            _, ssh_stdout, _ = ssh_con.exec_command(f"python3 thesis/time_rpi.py {to_compile}", get_pty=True)
+            _, ssh_stdout, _ = ssh_con.exec_command(f"python3 thesis/time_rpi_perf.py {to_compile}", get_pty=True)
+
             for line in iter(ssh_stdout.readline, ""):
                 print(line, end="")
             line = line.split(",")
