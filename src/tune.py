@@ -16,6 +16,9 @@ parser.add_argument('--op-age', help='extremum function to be used for the age o
                     default=min)
 parser.add_argument('--onehot', help='if true,  onehot encode the operand in the state', 
                     action='store_true', default=False)
+parser.add_argument('--h_size', help='size of the history', default=2, type=int)
+
+
 parser.add_argument('--nolog', action='store_true', default=False)
 parser.add_argument('--save', action='store_true', default=False, help='save the ".ll" file')
 parser.add_argument('--remote', action='store_true', default=False)
@@ -36,24 +39,27 @@ if not(args.remote) and  args.ip:
 
 # Create and wrap the environment
 env = LLVMEnv(
-        args.filepath, 
-        timer=args.timer, 
-        onehot=args.onehot, 
-        reward_scaler=args.r_scaler,
-        op_age=args.op_age,
-        save_ll=args.save,
-        remote=args.remote,
-        with_age=args.noage,
-        ip_address=args.ip
-    )
+    args.filepath, 
+    timer=args.timer, 
+    onehot=args.onehot, 
+    reward_scaler=args.r_scaler,
+    op_age=args.op_age,
+    save_ll=args.save,
+    remote=args.remote,
+    with_age=args.noage,
+    ip_address=args.ip,
+    h_size=args.h_size
+                )
 
 res = {"min": [], "mean": [], "std": [], "r": [], "ts": [],}
-for i in range(50):
+for i in range(5000):
     print(i)
     n_state = env.reset()
     done = False
     while not done:
+        #env.render()
         action = env.action_space.sample()
+        #print("action:", action)
         n_state, reward, done, info = env.step(action)
         
     
@@ -65,4 +71,4 @@ for i in range(50):
 
 
 
-pickle.dump(res, open("cray_c_benchmark_10_rpi_cpu_cycles_O0", "wb"))
+#pickle.dump(res, open("benchmark_results/5000rand_ep", "wb"))

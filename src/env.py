@@ -12,8 +12,8 @@ import paramiko
 from scp import SCPClient
 
 import gym
-import llvmlite.binding as llvm
-import llvmlite.ir as ll
+# import llvmlite.binding as llvm
+# import llvmlite.ir as ll
 import numpy as np
 from gym import spaces
 
@@ -21,13 +21,13 @@ from gym import spaces
 from .utils import * 
 from .parse_llvm import LLVMParser
 
-NB_RUNS = 11
+NB_RUNS = 10
 
 
 
 class LLVMEnv(gym.Env):
 
-    def __init__(self, file_path, timer, onehot=False, reward_scaler=1e6, op_age=min, save_ll=False, remote=False, with_age=True, ip_address=None):
+    def __init__(self, file_path, timer, onehot=False, reward_scaler=1e6, op_age=min, save_ll=False, remote=False, with_age=True, ip_address=None, h_size = 2):
         super(LLVMEnv, self).__init__()
 
         self.file_path = file_path
@@ -40,6 +40,10 @@ class LLVMEnv(gym.Env):
         self.save_ll = save_ll
         self.with_age = with_age
         self.ssh_con = False
+        self.scp_con = False
+        self.ip_address = None
+        self.h_size = h_size # size of the history
+
         print(self.with_age)
         if remote:
             self.ip_address = ip_address
@@ -95,23 +99,23 @@ class LLVMEnv(gym.Env):
         else:
             if self.with_age:
                 low = np.concatenate((
-                                np.array([0]*3*len(self.instr_to_opcode)), 
+                                np.array([0]*(self.h_size+1)*len(self.instr_to_opcode)), 
                                 np.array([0]*(self.MAX_AGE + 1)), 
                                 np.array([0]*4)
                 ))
 
                 high = np.concatenate((
-                            np.array([1]*3*len(self.instr_to_opcode)), 
+                            np.array([1]*(self.h_size+1)*len(self.instr_to_opcode)), 
                             np.array([1]*(self.MAX_AGE + 1)), 
                             np.array([1]*4)
                 ))
             else:
                 low = np.concatenate((
-                    np.array([0]*3*(len(self.instr_to_opcode))), 
+                    np.array([0]*(self.h_size+1)*(len(self.instr_to_opcode))), 
                     np.array([0]*4) 
                 ))
                 high = np.concatenate((
-                    np.array([1]*3*(len(self.instr_to_opcode))), 
+                    np.array([1]*(self.h_size+1)*(len(self.instr_to_opcode))), 
                     np.array([1]*4) 
                 ))
 
@@ -121,8 +125,8 @@ class LLVMEnv(gym.Env):
         self.selected_instruction = None  # current selected instruction
         self.schedulable_instructions = None
 
-        # last 3 scheduled instructions's opcode
-        self.history = collections.deque([0, 0], 2)
+        # last  scheduled instructions's opcode
+        self.history = collections.deque([0]*(self.h_size), self.h_size)
 
         self.llvm = LLVMController(self.file_path)
 
@@ -131,17 +135,17 @@ class LLVMEnv(gym.Env):
         print(f"original program time is: {self.original_time}s")
 
     def add_instruction(self):
-
         self.llvm.curr_instr_graph.remove_node(self.selected_instruction)
         # if self.selected_instruction.opcode in MEMORY_INSTR:
         #     self.llvm.curr_memory_graph.remove_node(self.selected_instruction)
+
 
         self.llvm.scheduled_instructions.append(self.selected_instruction)
         # update the schedulable instruction list
         self.schedulable_instructions, reset_history = self.llvm.find_schedulable_instructions()
         self.history.append(self.to_opcode(self.selected_instruction))
         if reset_history:
-            self.history = collections.deque([0, 0], 2)
+            self.history = collections.deque([0]*(self.h_size), self.h_size)
         
 
     def step(self, action):
@@ -161,6 +165,7 @@ class LLVMEnv(gym.Env):
         
         # if the agent has chosen to schedule the instruction
         if action == 0 or self.selected_instruction.seen_count > 3:
+        #if action == 0:
             self.add_instruction()
 
         done = len(self.schedulable_instructions) == 0
@@ -181,28 +186,19 @@ class LLVMEnv(gym.Env):
             print(self.run_time)
             
 
-            # reward = int(20 -  (round(self.run_time,3)*self.reward_scaler))
-            # reward = 1 if self.run_time < 0.433 else 0
-            # reward = int(50 - self.reward_scaler*self.run_time)
-            # reward = int(30 - self.reward_scaler*self.run_time)
-            #reward = int(380 - self.reward_scaler*round(min_rt,2))
-
-            # if  self.reward_scaler*round(min_rt,2) > 370:
-            #     reward = 0
-            # elif 365 <=self.reward_scaler*round(min_rt,2) <= 370:
-            #     reward = 2
-            
-            # elif 360 <=self.reward_scaler*round(min_rt,2) <= 365:
-            #     reward = 4
-            
-            # elif 355 <=self.reward_scaler*round(min_rt,2) <= 360:
-            #     reward = 6
-
-            # elif self.reward_scaler*round(min_rt,2) <= 355:
-            #     reward = 8
-
             #reward =  (original_min_rt - min_rt)*self.reward_scaler
-            reward =  (original_min_rt - min_rt)/self.reward_scaler
+
+            # REWARD 1
+            # reward =  (original_min_rt - min_rt)/self.reward_scaler
+
+            # REWARD 2
+            #R(s, a) = (runtime(original) - runtime(scheduled)) / runtime(original)
+            reward = ((original_min_rt - min_rt) / original_min_rt)*10
+
+            # REWARD 3
+            # reward = ((original_min_rt - min_rt) / original_min_rt)*10
+            # reward = 2 if reward >= 0.3 else 1 if reward > 0 else 0 
+                  
 
 
             # print(f"[episode done] reward: {reward} -- nb. steps: {self.curr_step} -- avg. shedul. instr.: {np.mean(self.nb_shedulables)} -- run time: {self.run_time} ")
@@ -308,8 +304,8 @@ class LLVMEnv(gym.Env):
 
     def render(self):
         print("---ENV---")
-        print("Instructions Scheduled ({}):".format(len(self.llvm.scheduled_instructions)))
-        for instr in self.llvm.scheduled_instructions:
+        print("Last 4 Instructions Scheduled({}):".format(len(self.llvm.scheduled_instructions)))
+        for instr in self.llvm.scheduled_instructions[-4:]:
             print(instr)
         print("Schedulable Instructions:")
         for instr in self.llvm.schedulable_instructions:
@@ -322,7 +318,7 @@ class LLVMEnv(gym.Env):
         self.llvm.reset()
         self.selected_instruction = None
         self.schedulable_instructions = None
-        self.history = collections.deque([0, 0], 2)
+        self.history = collections.deque([0]*(self.h_size), self.h_size)
         self.schedulable_instructions, _ = self.llvm.find_schedulable_instructions()
         self.nb_shedulables = []
         next_instruction_opcode = self.select_next_instruction(self.schedulable_instructions)
@@ -579,7 +575,7 @@ class LLVMController:
                             "-O0",
                             "-o", "res",
                             "llvm_file.ll", 
-                            # self.file_path,
+                            #self.file_path,
                             "-march=native",
                             "-mllvm", "-enable-misched=false",
                             "-mllvm", "-enable-post-misched=false",
@@ -590,13 +586,13 @@ class LLVMController:
             # select only one cpu
             pid = os.getpid()
             os.sched_setaffinity(pid, {0})
-            for _ in range(NB_RUNS):
+            for _ in range(1):
             #     usage_start = resource.getrusage(resource.RUSAGE_CHILDREN)
             #     # subprocess.run(["./res"])
             #     subprocess.run(["./res"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             #     usage_end = resource.getrusage(resource.RUSAGE_CHILDREN)
             #     times.append(usage_end.ru_utime - usage_start.ru_utime)
-                p = subprocess.run(["sshpass", "-p", "mamouche97", "sudo", "perf", "stat", "-o", "data.txt", "./res"])
+                p = subprocess.run(["sshpass", "-p", "mamouche97", "sudo", "perf", "stat", "-r", str(NB_RUNS), "-o", "data.txt", "./res"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL )
                 with open("data.txt", "r") as f:
                     res = f.readlines()
                 res = res[9]
@@ -604,6 +600,7 @@ class LLVMController:
                 res = res[0]
                 res = res.replace(",", "")
                 times.append(float(res))
+                
             
             os.sched_setaffinity(pid, {0, 1, 2, 3})
 
@@ -612,18 +609,17 @@ class LLVMController:
             # if not are_equals("reference", "rendered_scene"):
             #     print("program output problem")
             #     exit()
+            # if save:
+            #     print("[env]: dumping files")
+            #     Path("saved/").mkdir(parents=True, exist_ok=True)
+            #     with open(f"saved/dumpll_{step}.ll", "w") as text_file:
+            #         text_file.write(self.string_file)
 
-
-            if save:
-                print("[env]: dumping files")
-                Path("saved/").mkdir(parents=True, exist_ok=True)
-                with open(f"saved/dumpll_{step}.ll", "w") as text_file:
-                    text_file.write(self.string_file)
-
-                subprocess.run(["cp",  "res",  f"saved/dumpexec_{step}"])
+            #     subprocess.run(["cp",  "res",  f"saved/dumpexec_{step}"])
 
             times = times[1:]
-            return min(times), np.mean(times), np.std(times)
+            #return min(times), np.mean(times), np.std(times)
+            return float(res), float(res), float(res)
         # remote
         else:
             original_file = self.file_path.split("/")[-1]

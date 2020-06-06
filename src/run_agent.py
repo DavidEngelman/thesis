@@ -13,11 +13,12 @@ from stable_baselines.bench import Monitor
 from stable_baselines.common.env_checker import check_env
 from stable_baselines.common.policies import MlpPolicy, MlpLstmPolicy
 from stable_baselines.deepq.policies import FeedForwardPolicy
+
 from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines.common.callbacks import BaseCallback
 from stable_baselines.common.callbacks import CheckpointCallback
 
-from stable_baselines import PPO2
+from stable_baselines import PPO2, TRPO, A2C, SAC
 
 
 from .env import LLVMEnv
@@ -48,15 +49,21 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--filepath', help='program filepath to optimize', required=True)
-    parser.add_argument('--algo', help='The RL algorithm', default="dqn", choices=["dqn", "ppo"])
+    parser.add_argument('--algo', help='The RL algorithm', default="dqn", choices=["dqn", "ppo", "a2c", "trpo"])
     parser.add_argument('--steps', help='Number of steps for training', default=1e5, type=float)
+    parser.add_argument('--lr', help='Number of steps for training', default=1e-5, type=float)
+
+
+
     parser.add_argument('--timer', help='timer function to be used by the env', 
                         default="timer_v1")
     parser.add_argument('--r-scaler', help='constant to rescale de reward', default=10, type=int)
     parser.add_argument('--op-age', help='extremum function to be used for the age of the operands',
                         default=min)
     parser.add_argument('--onehot', help='if true,  onehot encode the operand in the state', 
-                        action='store_true', default=False)
+                        action='store_true', default=True)
+    parser.add_argument('--h_size', help='size of the history', default=2, type=int)
+
     parser.add_argument('--nolog', action='store_true', default=False)
     parser.add_argument('--save', action='store_true', default=False, help='save the ".ll" file')
     parser.add_argument('--remote', action='store_true', default=False)
@@ -88,7 +95,8 @@ def main():
                     save_ll=args.save,
                     remote=args.remote,
                     with_age=args.noage,
-                    ip_address=args.ip
+                    ip_address=args.ip,
+                    h_size=args.h_size
                 )
 
 
@@ -104,13 +112,19 @@ def main():
 
     if args.algo == "dqn":
         env = DummyVecEnv([lambda: env])
-        model = CustomDQN(CustomDQNPolicy, env, gamma=0.999, prioritized_replay=True, verbose=1)
+        model = CustomDQN(CustomDQNPolicy, env, gamma=0.999, prioritized_replay=True, verbose=1, learning_rate=args.lr)
 
     elif args.algo == "ppo":
-        print("creating model...")
         env = DummyVecEnv([lambda: env]*8)
-        model = PPO2(MlpLstmPolicy, env, gamma=0.999, n_steps=1000, noptepochs=5, verbose=2, learning_rate=1e-4)
-        print("done")
+        model = PPO2(MlpLstmPolicy, env, gamma=0.999, n_steps=1000, noptepochs=5, verbose=2, learning_rate=args.lr)
+    
+    elif args.algo == "a2c":
+        env = DummyVecEnv([lambda: env]*8)
+        model = A2C(MlpLstmPolicy, env, gamma=0.999, n_steps=1000, verbose=2, learning_rate=args.lr)
+    
+    elif args.algo == "trpo":
+        env = DummyVecEnv([lambda: env])
+        model = TRPO(MlpPolicy, env, gamma=0.999, verbose=2)
 
 
 
