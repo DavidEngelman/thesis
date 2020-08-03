@@ -1,2 +1,10 @@
-# thesis
-Master Thesis
+# Master Thesis: Building a Reinforcement Learning Environment for Machine Instruction Scheduling
+Artificial Intelligence Lab (Vrije Universiteit Brussel)
+
+## Abstract
+When executing a program, several factors will influence its performance.  Of course,among them, we can cite the actual code written by the programmers or the hardwarethat was used. However, it exists more subtle elements that are related to the compilerused to transform code to actual machine instructions. Compilers autotuning is the fieldof computer science focusing on finding automated methods to improve compilers andhas been studied by researchers since the 1960s.In this thesis, we focus on one particular problem that is solved by compilers, Ma-chine Instruction Scheduling. The order in which instructions are executed by a computercan influence its run time, and nowadays, instruction scheduling is done using complexheuristics. With the aim of finding automated solutions to instruction scheduling, wedeveloped and propose a new Reinforcement Learning environment. Researchers havealready shown, in the past, that Reinforcement Learning agents were capable of out-performing compilers [MMB02].  However, no recent work has tried to automate theinstruction scheduling task on modern processors.  By proposing a new environmentcompatible with LLVM, a modern compiler, we hope to revitalize interest in this field.This master thesis describes how our environment has been implemented and thechallenges that we faced during this process.  We show it is able to produce a newvalid rescheduled program while having influence on its speed.  Finally, we highlighthow challenging the task of learning in our new environment is, and discuss why currentReinforcement Learning agents seem to not to be able to learn in such a complicatedenvironment. We then propose future research directions that should lead to agents ableto learn in our environment, leading to a complete system, able to automatically schedulethe instructions in a program.
+
+## Code
+
+The src folder contained all the code written for this thesis. You can find the code of the RL environment in src/env.py
+More information about how the environment was implemented can be found in Chapter 4 of my thesis.
