@@ -57,9 +57,9 @@ for i in range(5000):
     n_state = env.reset()
     done = False
     while not done:
-        #env.render()
+        env.render()
         action = env.action_space.sample()
-        #print("action:", action)
+        print("action:", action)
         n_state, reward, done, info = env.step(action)
         
     

@@ -108,8 +108,8 @@ unsigned long get_msec(void);
 } while(0);
 
 /* global state */
-int xres = 800;
-int yres = 600;
+int xres = 80;
+int yres = 60;
 double aspect = 1.333333;
 struct sphere *obj_list;
 struct vec3 lights[MAX_LIGHTS];

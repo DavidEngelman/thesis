@@ -54,18 +54,6 @@ def create_dependency_graphs(block):
 def depends_on(instr1, instr2):
     return instr2 in instr1.operands
 
-# def get_load_dependencies(instr, others, block):
-#     res = []
-#     instr_operands = list(instr.operands)
-#     for o_instr in others:
-#         if  o_instr.opcode == "store" and have_common_operand(o_instr.operands, instr_operands, block):
-#             res.append(o_instr)
-#     return res
-
-
-
-# def is_before(i1, i2, block):
-#     return block.index(i1) < block.index(i2)
 
 
 def have_common_operand(op_list1, op_list2, block):
@@ -85,6 +73,7 @@ def list_to_string(l):
 
 
 def are_equals (path1, path2):
+    """Checks if 2 images are equal"""
     im1 = cv2.imread(path1)
     im2 = cv2.imread(path2)
     difference = cv2.subtract(im1, im2)

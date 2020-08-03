@@ -13,8 +13,8 @@ define i32 @main() #0 {
   %3 = alloca i32, align 4
   %4 = alloca i64, align 8
   store i32 0, i32* %1, align 4
+  store i32 10, i32* %2, align 4
   store i64 1, i64* %4, align 8
-  store i32 4, i32* %2, align 4
   %5 = load i32, i32* %2, align 4
   %6 = icmp slt i32 %5, 0
   br i1 %6, label %7, label %9
@@ -54,9 +54,7 @@ define i32 @main() #0 {
   br label %26
 
 ; <label>:26:                                     ; preds = %22, %7
-  %27 = load i64, i64* %4, align 8
-  %28 = trunc i64 %27 to i32
-  ret i32 %28
+  ret i32 0
 }
 
 declare i32 @printf(i8*, ...) #1

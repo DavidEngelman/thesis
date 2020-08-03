@@ -155,15 +155,16 @@ def list_to_string(list):
 
 
 if __name__ == "__main__":
-    module = LLVMParser.parse('../c-ray/c-ray-f-2.ll')
+    module = LLVMParser.parse('../c_examples/pi_O0.ll')
     opcodes = list()
     for func in module.functions:
         for block in func.blocks:
             for instr in block.instructions:
                 opcodes.append(instr.opcode)
 
-
-    opcodes = list(set(opcodes))
-    opcodes = sorted(opcodes)
-    for elem in opcodes:
-        print(elem)
+    for func in module.functions:
+        for block in func.blocks:
+            for instr in block.instructions:
+                print(instr.str_repr)
+                print(instr.operands)
+    
