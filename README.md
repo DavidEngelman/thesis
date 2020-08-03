@@ -7,4 +7,4 @@ When executing a program, several factors will influence its performance.  Of co
 ## Code
 
 The src folder contained all the code written for this thesis. You can find the code of the RL environment in src/env.py
-More information about how the environment was implemented can be found in Chapter 4 of my thesis.
+More information about how the environment was implemented can be found in Chapter 4 of my [thesis](https://github.com/DavidEngelman/thesis/blob/master/Thesis.pdf).
